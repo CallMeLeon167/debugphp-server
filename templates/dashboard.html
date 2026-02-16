@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DebugPHP — Dashboard</title>
+    <link href="/assets/fonts/fonts.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/dashboard.css">
+</head>
+
+<body>
+
+    <!-- Topbar -->
+    <div class="topbar">
+        <div class="topbar-left">
+            <a href="https://debugphp.dev" class="topbar-logo" target="_blank">
+                DebugPHP
+            </a>
+            <div class="topbar-divider"></div>
+            <div class="session-info" id="sessionInfo">
+                <div class="session-status"></div>
+                <span class="session-id">Session: <strong id="sessionId">connecting...</strong></span>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <button class="topbar-btn" id="pauseBtn">&#10074;&#10074; Pause</button>
+            <button class="topbar-btn danger" id="clearBtn">&#128465; Clear</button>
+            <button class="topbar-btn new-session" id="newSessionBtn">+ New Session</button>
+        </div>
+    </div>
+
+    <!-- Main Layout -->
+    <div class="main-layout">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">Filters</div>
+                <div class="filter-chips">
+                    <span class="chip active" data-filter="all">All</span>
+                    <span class="chip" data-filter="info"><span class="chip-dot"
+                            style="background:var(--blue)"></span>Info</span>
+                    <span class="chip" data-filter="sql"><span class="chip-dot"
+                            style="background:var(--purple)"></span>SQL</span>
+                    <span class="chip" data-filter="error"><span class="chip-dot"
+                            style="background:var(--red)"></span>Error</span>
+                    <span class="chip" data-filter="timer"><span class="chip-dot"
+                            style="background:var(--yellow)"></span>Timer</span>
+                    <span class="chip" data-filter="success"><span class="chip-dot"
+                            style="background:var(--accent)"></span>Success</span>
+                    <span class="chip" data-filter="cache"><span class="chip-dot"
+                            style="background:var(--orange)"></span>Cache</span>
+                </div>
+            </div>
+            <div class="sidebar-search">
+                <input class="search-input" id="searchInput" type="text" placeholder="Search entries...">
+            </div>
+            <div class="sidebar-stats">
+                <div class="sidebar-title">Statistics</div>
+                <div class="stat-row">
+                    <span class="stat-label">Entries</span>
+                    <span class="stat-value" id="statTotal" style="color:var(--text-primary)">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Errors</span>
+                    <span class="stat-value" id="statErrors" style="color:var(--red)">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">SQL Queries</span>
+                    <span class="stat-value" id="statSql" style="color:var(--purple)">0</span>
+                </div>
+            </div>
+            <div class="sidebar-footer">
+                <div class="session-timer" id="sessionTimer">Connecting...</div>
+            </div>
+        </aside>
+
+        <!-- Debug Panel -->
+        <div class="debug-panel">
+            <div class="debug-toolbar">
+                <div class="debug-toolbar-left">
+                    <span class="entry-count"><strong id="visibleCount">0</strong> entries</span>
+                </div>
+                <div class="auto-scroll-toggle" id="autoScrollToggle">
+                    <div class="toggle-track on">
+                        <div class="toggle-knob"></div>
+                    </div>
+                    Auto-scroll
+                </div>
+            </div>
+
+            <div class="debug-log" id="debugLog">
+                <!-- Empty State -->
+                <div class="empty-state" id="emptyState">
+                    <div class="icon">&#9889;</div>
+                    <h3>Waiting for debug data...</h3>
+                    <p>
+                        Connect your PHP app to this session<br>
+                        and start sending with <code style="color:var(--accent)">Debug::send()</code>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detail Panel -->
+        <aside class="detail-panel hidden" id="detailPanel">
+            <div class="detail-header">
+                <h3>Entry Details</h3>
+                <button class="detail-close" id="detailClose">&times;</button>
+            </div>
+            <div class="detail-body" id="detailBody"></div>
+        </aside>
+
+    </div>
+
+    <script src="/assets/js/dashboard.js"></script>
+</body>
+
+</html>

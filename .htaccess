@@ -1,0 +1,81 @@
+# DebugPHP Server — Apache Configuration
+# Requires: mod_rewrite, mod_headers
+
+# ─── Rewrite Engine ───────────────────────────────────────
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Serve existing files and directories directly (assets, etc.)
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Route everything else through index.php
+    RewriteRule ^ index.php [L,QSA]
+</IfModule>
+
+# ─── SSE / Streaming ─────────────────────────────────────
+# Disable output buffering for Server-Sent Events
+<IfModule mod_headers.c>
+    <FilesMatch "index\.php$">
+        Header set X-Accel-Buffering "no"
+    </FilesMatch>
+</IfModule>
+
+# Disable mod_deflate for SSE streams
+<IfModule mod_deflate.c>
+    SetEnvIfNoCase Request_URI "^/api/stream" no-gzip
+</IfModule>
+
+# ─── CORS ─────────────────────────────────────────────────
+<IfModule mod_headers.c>
+    Header always set Access-Control-Allow-Origin "*"
+    Header always set Access-Control-Allow-Methods "GET, POST, DELETE, OPTIONS"
+    Header always set Access-Control-Allow-Headers "Content-Type, Accept"
+
+    # Handle preflight requests
+    RewriteCond %{REQUEST_METHOD} OPTIONS
+    RewriteRule ^ - [R=204,L]
+</IfModule>
+
+# ─── Security ─────────────────────────────────────────────
+# Prevent directory listing
+Options -Indexes
+
+# Deny access to sensitive files
+<FilesMatch "\.(env|neon|md|json|lock|gitignore)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Allow,Deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Deny access to hidden files
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Allow,Deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Deny access to src/ and templates/
+<IfModule mod_rewrite.c>
+    RewriteRule ^(src|templates|data|vendor)/ - [F,L]
+</IfModule>
+
+# Disable server signature
+ServerSignature Off
+
+# ─── Performance ──────────────────────────────────────────
+# Cache static assets
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+</IfModule>
