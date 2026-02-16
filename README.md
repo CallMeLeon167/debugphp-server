@@ -129,9 +129,9 @@ sudo systemctl restart apache2
 
 ```
 ┌──────────────┐     POST /api/debug     ┌──────────────┐     SSE Stream     ┌──────────────┐
-│   Your App   │ ──────────────────────→  │   DebugPHP   │ ────────────────→  │  Dashboard   │
-│  Debug::send │                          │    Server     │                    │   (Browser)  │
-└──────────────┘                          └──────────────┘                    └──────────────┘
+│   Your App   │ ──────────────────────→ │   DebugPHP   │ ────────────────→  │  Dashboard   │
+│  Debug::send │                         │    Server    │                    │   (Browser)  │
+└──────────────┘                         └──────────────┘                    └──────────────┘
 ```
 
 1. Your PHP app sends debug data via HTTP POST to `/api/debug`.
