@@ -27,6 +27,8 @@ use DebugPHP\Server\Config;
                 <div class="session-status"></div>
                 <span class="session-id">Session: <strong id="sessionId">connecting...</strong></span>
             </div>
+            <div class="topbar-divider"></div>
+            <div class="topbar-metrics" id="topbarMetrics"></div>
         </div>
         <div class="topbar-right">
             <button class="topbar-btn" id="pauseBtn">&#10074;&#10074; Pause</button>

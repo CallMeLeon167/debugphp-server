@@ -234,7 +234,8 @@ function renderWizard(bool $envExists, array $values): void
                 </div>
                 <div class="code-box">
                     <span class="kw">CREATE TABLE</span> <span class="val">sessions</span> (...)<br>
-                    <span class="kw">CREATE TABLE</span> <span class="val">entries</span> (...)
+                    <span class="kw">CREATE TABLE</span> <span class="val">entries</span> (...) <br>
+                    <span class="kw">CREATE TABLE</span> <span class="val">metrics</span> (...)
                 </div>
                 <div id="alertSetup" class="alert"></div>
                 <div class="btn-row">

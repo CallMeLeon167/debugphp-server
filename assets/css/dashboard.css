@@ -47,7 +47,7 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 0 24px;
-    height: 54px;
+    min-height: 54px;
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border);
 }
@@ -676,6 +676,78 @@ body {
 .empty-state p {
     font-size: 13px;
     line-height: 1.6;
+}
+
+/* ─── Toolbar Metrics ────────────────────────────────────── */
+.topbar-metrics {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 10px 0;
+}
+
+.metric-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 6px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    animation: metricFadeIn 0.25s ease;
+    transition: border-color 0.2s, color 0.2s;
+}
+
+.metric-chip:hover {
+    border-color: var(--accent-mid);
+    color: var(--text-primary);
+}
+
+.metric-chip .metric-key {
+    color: var(--text-muted);
+}
+
+.metric-chip .metric-value {
+    color: var(--accent);
+}
+
+/* No value present — show only the key */
+.metric-chip.label-only .metric-key {
+    color: var(--text-secondary);
+}
+
+/* Update highlight: brief flash when a value is updated */
+@keyframes metricPulse {
+    0% {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    100% {
+        border-color: var(--border);
+        color: var(--text-secondary);
+    }
+}
+
+.metric-chip.updated {
+    animation: metricPulse 0.6s ease forwards;
+}
+
+@keyframes metricFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* ─── Scrollbar ──────────────────────────────────────────── */

@@ -34,6 +34,7 @@
         statErrors: document.getElementById('statErrors'),
         statSql: document.getElementById('statSql'),
         sessionTimer: document.getElementById('sessionTimer'),
+        topbarMetrics: document.getElementById('topbarMetrics'),
     };
 
     // ─── Color Mapping ──────────────────────────────────────
@@ -106,6 +107,16 @@
             addEntry(data);
         });
 
+        eventSource.addEventListener('metric', function (e) {
+            let data = JSON.parse(e.data);
+            updateMetric(data.key, data.value);
+        });
+
+        eventSource.addEventListener('metric:remove', function (e) {
+            let data = JSON.parse(e.data);
+            removeMetric(data.key);
+        });
+
         eventSource.addEventListener('expired', function () {
             dom.sessionInfo.classList.add('disconnected');
         });
@@ -117,6 +128,82 @@
         eventSource.onerror = function () {
             dom.sessionInfo.classList.add('disconnected');
         };
+    }
+
+    // ─── Metrics ────────────────────────────────────────────
+
+    /**
+     * Inserts a metric chip into the topbar or updates an existing one.
+     *
+     * @param {string}      key   - The metric name.
+     * @param {string|null} value - The value, or null for label-only display.
+     */
+    function updateMetric(key, value) {
+        let attrKey = key.replace(/[^a-zA-Z0-9_-]/g, '_');
+        let existing = dom.topbarMetrics.querySelector('[data-metric-key="' + attrKey + '"]');
+
+        if (existing) {
+            existing.classList.remove('updated');
+            void existing.offsetWidth;
+
+            if (value !== null && value !== undefined) {
+                let valEl = existing.querySelector('.metric-value');
+                if (valEl) {
+                    valEl.textContent = value;
+                }
+                existing.classList.remove('label-only');
+            }
+
+            existing.classList.add('updated');
+            return;
+        }
+
+        let chip = document.createElement('span');
+        chip.className = 'metric-chip' + (value === null || value === undefined ? ' label-only' : '');
+        chip.dataset.metricKey = attrKey;
+
+        if (value !== null && value !== undefined) {
+            chip.innerHTML =
+                '<span class="metric-key">' + escapeHtml(key) + ':</span>' +
+                '<span class="metric-value">' + escapeHtml(String(value)) + '</span>';
+        } else {
+            chip.innerHTML = '<span class="metric-key">' + escapeHtml(key) + '</span>';
+        }
+
+        dom.topbarMetrics.appendChild(chip);
+    }
+
+    /**
+     * Removes a metric chip from the topbar with a fade-out animation.
+     *
+     * Called when a metric:remove SSE event is received, which happens when
+     * a metric key is no longer sent during the current PHP request.
+     *
+     * @param {string} key - The metric name to remove.
+     */
+    function removeMetric(key) {
+        let attrKey = key.replace(/[^a-zA-Z0-9_-]/g, '_');
+        let chip = dom.topbarMetrics.querySelector('[data-metric-key="' + attrKey + '"]');
+
+        if (!chip) return;
+
+        chip.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        chip.style.opacity = '0';
+        chip.style.transform = 'translateY(-4px)';
+
+        setTimeout(function () {
+            if (chip.parentNode) {
+                chip.parentNode.removeChild(chip);
+            }
+        }, 300);
+    }
+
+    /**
+     * Removes all metric chips from the topbar.
+     * Called when a new session is started.
+     */
+    function clearMetrics() {
+        dom.topbarMetrics.innerHTML = '';
     }
 
     // ─── Entry Rendering ────────────────────────────────────
@@ -163,7 +250,7 @@
 
         dom.debugLog.appendChild(el);
 
-        // Apply filters
+        // Apply active filters
         if (activeFilter !== 'all' && entry.type !== activeFilter) {
             el.style.display = 'none';
         }
@@ -244,8 +331,8 @@
     /**
      * Shows entry details in the side panel.
      *
-     * @param {Object} entry - The entry data.
-     * @param {HTMLElement} el - The clicked DOM element.
+     * @param {Object}      entry - The entry data.
+     * @param {HTMLElement} el    - The clicked DOM element.
      */
     function selectEntry(entry, el) {
         // Deselect previous
@@ -386,6 +473,7 @@
         dom.detailPanel.classList.add('hidden');
         stats = { total: 0, errors: 0, sql: 0 };
         updateStats();
+        clearMetrics();
         startNewSession();
     });
 
@@ -473,8 +561,8 @@
     /**
      * Applies a session (new or restored) to the UI and connects the stream.
      *
-     * @param {Object} session - The session data.
-     * @param {boolean} isNew - Whether this is a freshly created session.
+     * @param {Object}  session - The session data.
+     * @param {boolean} isNew   - Whether this is a freshly created session.
      */
     function applySession(session, isNew) {
         sessionId = session.id;
@@ -489,6 +577,7 @@
             dom.detailPanel.classList.add('hidden');
             stats = { total: 0, errors: 0, sql: 0 };
             updateStats();
+            clearMetrics();
         }
 
         saveSession(session);
@@ -513,17 +602,14 @@
      * Initializes the dashboard.
      *
      * Tries to restore an existing session from localStorage.
-     * Only creates a new session if none is stored or the stored
-     * one has expired.
+     * Only creates a new session if none is stored or the stored one has expired.
      */
     async function init() {
         let stored = loadSession();
 
         if (stored) {
-            // Restore existing session
             applySession(stored, false);
         } else {
-            // No valid session — create a new one
             await startNewSession();
         }
     }

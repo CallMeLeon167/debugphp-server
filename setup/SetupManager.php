@@ -53,7 +53,7 @@ final class SetupManager
      * Checks whether the server is fully configured.
      *
      * Considers the server configured when the .env file exists,
-     * the database connection works, and both required tables are present.
+     * the database connection works, and all required tables are present.
      *
      * @param array<string, string> $env The loaded environment variables.
      */
@@ -77,7 +77,8 @@ final class SetupManager
             $tables = $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
 
             return in_array('sessions', $tables, true)
-                && in_array('entries', $tables, true);
+                && in_array('entries', $tables, true)
+                && in_array('metrics', $tables, true);
         } catch (\Throwable) {
             return false;
         }
@@ -177,8 +178,15 @@ final class SetupManager
     /**
      * Creates the required database tables.
      *
-     * Uses CREATE TABLE IF NOT EXISTS, so running this multiple
-     * times is safe and will not destroy existing data.
+     * Uses CREATE TABLE IF NOT EXISTS, so running this multiple times
+     * is safe and will not destroy existing data.
+     *
+     * Tables:
+     * - sessions: Active debug sessions
+     * - entries:  Sent debug entries
+     * - metrics:  Toolbar metrics with request lifecycle tracking
+     *               request_id — ties each metric to a specific PHP request
+     *               removed_at — soft-delete timestamp for stale metric detection
      *
      * @param  array<string, mixed> $body The decoded request body.
      * @return array{success: bool, message: string}
@@ -218,6 +226,21 @@ final class SetupManager
                     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     INDEX idx_session_id (session_id),
                     INDEX idx_session_created (session_id, id),
+                    FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ');
+
+            $pdo->exec('
+                CREATE TABLE IF NOT EXISTS metrics (
+                    session_id VARCHAR(32) NOT NULL,
+                    `key` VARCHAR(100) NOT NULL,
+                    value TEXT NULL,
+                    request_id VARCHAR(16) NOT NULL DEFAULT \'\',
+                    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    removed_at DATETIME NULL DEFAULT NULL,
+                    PRIMARY KEY (session_id, `key`),
+                    INDEX idx_metrics_updated (session_id, updated_at),
+                    INDEX idx_metrics_removed (session_id, removed_at),
                     FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             ');

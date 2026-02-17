@@ -17,6 +17,7 @@ namespace DebugPHP\Server;
 
 use DebugPHP\Server\Database\Connection;
 use DebugPHP\Server\Database\EntryRepository;
+use DebugPHP\Server\Database\MetricRepository;
 use DebugPHP\Server\Database\SessionRepository;
 use DebugPHP\Server\Http\Controller;
 use DebugPHP\Server\Http\StreamController;
@@ -41,20 +42,17 @@ final class Application
 
     /**
      * Bootstraps the application and wires all dependencies.
-     *
-     * All classes are instantiated here and connected to each other.
-     * This pattern is called "Dependency Injection" — each class receives
-     * its dependencies from the outside rather than creating them itself.
      */
     public function __construct()
     {
         Config::init();
 
-        $connection = new Connection();
+        $connection        = new Connection();
         $sessionRepository = new SessionRepository($connection);
         $entryRepository   = new EntryRepository($connection);
-        $controller       = new Controller($sessionRepository, $entryRepository);
-        $streamController = new StreamController($sessionRepository, $entryRepository);
+        $metricRepository  = new MetricRepository($connection);
+        $controller        = new Controller($sessionRepository, $entryRepository, $metricRepository);
+        $streamController  = new StreamController($sessionRepository, $entryRepository, $metricRepository);
 
         $this->router = new Router();
         $this->registerRoutes($controller, $streamController);
@@ -62,9 +60,6 @@ final class Application
 
     /**
      * Dispatches the incoming HTTP request.
-     *
-     * Reads the current URL and HTTP method and passes them to the router.
-     * The router then decides which controller method to call.
      */
     public function run(): void
     {
@@ -74,11 +69,6 @@ final class Application
 
     /**
      * Registers all application routes.
-     *
-     * Each route consists of:
-     * - An HTTP method (GET, POST, DELETE)
-     * - A URL pattern (exact path or with {placeholders})
-     * - A callback that is invoked on match
      *
      * @param Controller       $controller       The HTTP controller.
      * @param StreamController $streamController The SSE stream controller.
@@ -92,6 +82,8 @@ final class Application
 
         $this->router->post('/api/debug', [$controller, 'storeEntry']);
         $this->router->post('/api/clear', [$controller, 'clearEntries']);
+
+        $this->router->post('/api/metric', [$controller, 'storeMetric']);
 
         $this->router->get('/api/stream/{id}', [$streamController, 'handle']);
     }

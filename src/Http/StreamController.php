@@ -16,20 +16,25 @@ declare(strict_types=1);
 namespace DebugPHP\Server\Http;
 
 use DebugPHP\Server\Database\EntryRepository;
+use DebugPHP\Server\Database\MetricRepository;
 use DebugPHP\Server\Database\SessionRepository;
 
 /**
  * Server-Sent Events (SSE) stream controller.
  *
- * Keeps an HTTP connection open and pushes new debug entries
- * to the dashboard in real-time. The browser connects using
- * the native EventSource API.
- *
- * This class is intentionally separated from Controller because SSE requires
- * a long-running connection with a polling loop — fundamentally different
- * from a normal request/response cycle.
+ * Keeps an HTTP connection open and pushes new debug entries as well as
+ * toolbar metric updates and removals to the dashboard in real-time.
  *
  * GET /api/stream/{id}
+ *
+ * Emitted event types:
+ *   connected      - Sent once on initial connection
+ *   entry          - Sent for each new debug entry
+ *   metric         - Sent for each new or updated toolbar metric
+ *   metric:remove  - Sent when a metric is no longer present in the current request
+ *   expired        - Sent when the session has expired
+ *   reconnect      - Sent after MAX_LIFETIME (browser will auto-reconnect)
+ *   : heartbeat    - Comment sent every cycle to keep the connection alive
  */
 final class StreamController
 {
@@ -49,25 +54,23 @@ final class StreamController
      *
      * @param SessionRepository $sessions Repository for session lookups.
      * @param EntryRepository   $entries  Repository for fetching new entries.
+     * @param MetricRepository  $metrics  Repository for toolbar metrics.
      */
     public function __construct(
         private readonly SessionRepository $sessions,
         private readonly EntryRepository $entries,
+        private readonly MetricRepository $metrics,
     ) {}
 
     /**
      * Starts the SSE stream for a given session.
      *
-     * Sets the required HTTP headers, then enters a polling loop that
-     * fetches new entries from the database every second and pushes them
-     * to the connected browser.
-     *
-     * Emitted event types:
-     *   connected  - Sent once on initial connection
-     *   entry      - Sent for each new debug entry
-     *   expired    - Sent when the session has expired
-     *   reconnect  - Sent after MAX_LIFETIME (browser will auto-reconnect)
-     *   : heartbeat - Comment sent every cycle to keep the connection alive
+     * Sets the required HTTP headers, pushes all existing metrics once on
+     * connect, then enters a polling loop that:
+     *   1. Fetches and pushes new debug entries
+     *   2. Fetches and pushes updated metrics (metric event)
+     *   3. Fetches and pushes soft-deleted metrics (metric:remove event),
+     *      then hard-deletes them from the database
      *
      * @param string $sessionId The session ID from the URL.
      */
@@ -94,7 +97,17 @@ final class StreamController
             'resumed_from' => $lastId,
         ]);
 
-        $startTime = time();
+        $existingMetrics = $this->metrics->findBySession($sessionId);
+        foreach ($existingMetrics as $metric) {
+            $this->sendEvent('metric', [
+                'key'   => $metric['key'],
+                'value' => $metric['value'],
+            ]);
+        }
+
+        $startTime       = time();
+        $lastMetricCheck = date('Y-m-d H:i:s');
+        $lastRemoveCheck = date('Y-m-d H:i:s');
 
         while (true) {
             if (connection_aborted() !== 0) {
@@ -115,7 +128,7 @@ final class StreamController
                 break;
             }
 
-            // Fetch and push new entries
+            // ── 1. New debug entries ─────────────────────────
             $newEntries = $this->entries->findNewerThan($sessionId, $lastId);
 
             foreach ($newEntries as $entry) {
@@ -137,6 +150,36 @@ final class StreamController
                 ], (int) $entry['id']);
 
                 $lastId = (int) $entry['id'];
+            }
+
+            // ── 2. Updated metrics ───────────────────────────
+            $updatedMetrics = $this->metrics->findUpdatedAfter($sessionId, $lastMetricCheck);
+
+            if ($updatedMetrics !== []) {
+                $lastMetricCheck = date('Y-m-d H:i:s');
+
+                foreach ($updatedMetrics as $metric) {
+                    $this->sendEvent('metric', [
+                        'key'   => $metric['key'],
+                        'value' => $metric['value'],
+                    ]);
+                }
+            }
+
+            // ── 3. Removed metrics ───────────────────────────
+            $removedMetrics = $this->metrics->findRemoved($sessionId, $lastRemoveCheck);
+
+            if ($removedMetrics !== []) {
+                $lastRemoveCheck = date('Y-m-d H:i:s');
+
+                foreach ($removedMetrics as $metric) {
+                    $this->sendEvent('metric:remove', [
+                        'key' => $metric['key'],
+                    ]);
+                }
+
+                // Clean up the soft-deleted rows now that we have notified the client
+                $this->metrics->hardDeleteRemoved($sessionId);
             }
 
             echo ": heartbeat\n\n";
