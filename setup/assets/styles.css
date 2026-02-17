@@ -112,6 +112,15 @@ body {
     background: var(--accent);
 }
 
+.section-label {
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-primary);
+    margin-bottom: 14px;
+}
+
 /* ─── Card ───────────────────────────────────────────────── */
 .card {
     background: var(--bg-secondary);

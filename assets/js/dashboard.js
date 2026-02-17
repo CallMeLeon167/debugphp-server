@@ -102,7 +102,7 @@
         eventSource.addEventListener('entry', function (e) {
             if (paused) return;
 
-            var data = JSON.parse(e.data);
+            let data = JSON.parse(e.data);
             addEntry(data);
         });
 
@@ -127,25 +127,24 @@
      * @param {Object} entry - The entry data from the server.
      */
     function addEntry(entry) {
-        // Hide empty state
         dom.emptyState.style.display = 'none';
 
-        var el = document.createElement('div');
+        let el = document.createElement('div');
         el.className = 'log-entry';
         el.dataset.type = entry.type || 'info';
         el.dataset.id = String(entry.id);
 
-        var colorClass = colorMap[entry.color] || 'c-gray';
-        var labelClass = labelMap[entry.type] || 'label-info';
-        var time = formatTimestamp(entry.timestamp);
-        var label = entry.label || entry.type || 'info';
-        var origin = '';
+        let colorClass = colorMap[entry.color] || 'c-gray';
+        let labelClass = labelMap[entry.type] || 'label-info';
+        let time = formatTimestamp(entry.timestamp);
+        let label = entry.label || entry.type || 'info';
+        let origin = '';
 
         if (entry.origin && entry.origin.file) {
             origin = entry.origin.file + (entry.origin.line ? ':' + entry.origin.line : '');
         }
 
-        var content = formatData(entry.data);
+        let content = formatData(entry.data);
 
         el.innerHTML =
             '<div class="entry-color ' + colorClass + '"></div>' +
@@ -205,7 +204,7 @@
         }
 
         if (typeof data === 'object') {
-            var json = JSON.stringify(data, null, 2);
+            let json = JSON.stringify(data, null, 2);
             return '<div class="json-preview">' + syntaxHighlight(json) + '</div>';
         }
 
@@ -223,7 +222,7 @@
         return json.replace(
             /("(\\u[\da-fA-F]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
             function (match) {
-                var cls = 'color:var(--orange)'; // number
+                let cls = 'color:var(--orange)'; // number
                 if (/^"/.test(match)) {
                     if (/:$/.test(match)) {
                         cls = 'color:var(--blue)'; // key
@@ -250,7 +249,7 @@
      */
     function selectEntry(entry, el) {
         // Deselect previous
-        var prev = dom.debugLog.querySelector('.log-entry.selected');
+        let prev = dom.debugLog.querySelector('.log-entry.selected');
         if (prev) prev.classList.remove('selected');
 
         el.classList.add('selected');
@@ -258,12 +257,12 @@
 
         dom.detailPanel.classList.remove('hidden');
 
-        var origin = '';
+        let origin = '';
         if (entry.origin && entry.origin.file) {
             origin = entry.origin.file;
         }
 
-        var dataJson = typeof entry.data === 'object'
+        let dataJson = typeof entry.data === 'object'
             ? JSON.stringify(entry.data, null, 2)
             : String(entry.data);
 
@@ -274,6 +273,7 @@
             '<div class="detail-meta-item"><div class="dm-label">Time</div><div class="dm-value">' + formatTimestamp(entry.timestamp) + '</div></div>' +
             '<div class="detail-meta-item"><div class="dm-label">File</div><div class="dm-value">' + escapeHtml(origin || 'unknown') + '</div></div>' +
             '<div class="detail-meta-item"><div class="dm-label">Line</div><div class="dm-value">' + (entry.origin ? entry.origin.line : 0) + '</div></div>' +
+            '<div class="detail-meta-item full-width"><div class="dm-label">Path</div><div class="dm-value">' + escapeHtml(entry.origin.path) + '</div></div>' +
             '</div>' +
             '</div>' +
             '<div class="detail-section">' +
@@ -288,13 +288,13 @@
      * Applies the active filter and search query to all entries.
      */
     function applyFilters() {
-        var entries = dom.debugLog.querySelectorAll('.log-entry');
-        var visible = 0;
+        let entries = dom.debugLog.querySelectorAll('.log-entry');
+        let visible = 0;
 
         entries.forEach(function (entry) {
-            var matchesFilter = activeFilter === 'all' || entry.dataset.type === activeFilter;
-            var matchesSearch = !searchQuery || entry.textContent.toLowerCase().includes(searchQuery);
-            var show = matchesFilter && matchesSearch;
+            let matchesFilter = activeFilter === 'all' || entry.dataset.type === activeFilter;
+            let matchesSearch = !searchQuery || entry.textContent.toLowerCase().includes(searchQuery);
+            let show = matchesFilter && matchesSearch;
 
             entry.style.display = show ? 'flex' : 'none';
             if (show) visible++;
@@ -312,11 +312,11 @@
      * @returns {string} The formatted time string.
      */
     function formatTimestamp(ts) {
-        var d = new Date(ts * 1000);
-        var h = String(d.getHours()).padStart(2, '0');
-        var m = String(d.getMinutes()).padStart(2, '0');
-        var s = String(d.getSeconds()).padStart(2, '0');
-        var ms = String(d.getMilliseconds()).padStart(3, '0');
+        let d = new Date(ts * 1000);
+        let h = String(d.getHours()).padStart(2, '0');
+        let m = String(d.getMinutes()).padStart(2, '0');
+        let s = String(d.getSeconds()).padStart(2, '0');
+        let ms = String(d.getMilliseconds()).padStart(3, '0');
         return h + ':' + m + ':' + s + '.' + ms;
     }
 
@@ -327,7 +327,7 @@
      * @returns {string} The escaped string.
      */
     function escapeHtml(str) {
-        var div = document.createElement('div');
+        let div = document.createElement('div');
         div.textContent = str;
         return div.innerHTML;
     }
@@ -398,7 +398,7 @@
     // Detail panel close
     document.getElementById('detailClose').addEventListener('click', function () {
         dom.detailPanel.classList.add('hidden');
-        var prev = dom.debugLog.querySelector('.log-entry.selected');
+        let prev = dom.debugLog.querySelector('.log-entry.selected');
         if (prev) prev.classList.remove('selected');
     });
 
@@ -408,17 +408,17 @@
     function updateSessionTimer() {
         if (!sessionExpiresAt) return;
 
-        var now = new Date();
-        var diff = sessionExpiresAt - now;
+        let now = new Date();
+        let diff = sessionExpiresAt - now;
 
         if (diff <= 0) {
             dom.sessionTimer.textContent = 'Session expired';
             return;
         }
 
-        var hours = Math.floor(diff / 3600000);
-        var minutes = Math.floor((diff % 3600000) / 60000);
-        var seconds = Math.floor((diff % 60000) / 1000);
+        let hours = Math.floor(diff / 3600000);
+        let minutes = Math.floor((diff % 3600000) / 60000);
+        let seconds = Math.floor((diff % 60000) / 1000);
 
         dom.sessionTimer.textContent = 'Expires in ' +
             String(hours).padStart(2, '0') + ':' +
@@ -450,15 +450,14 @@
      * @returns {Object|null} The stored session or null.
      */
     function loadSession() {
-        var stored = localStorage.getItem('debugphp_session');
+        let stored = localStorage.getItem('debugphp_session');
 
         if (!stored) return null;
 
         try {
-            var session = JSON.parse(stored);
-            var expiresAt = new Date(session.expires_at);
+            let session = JSON.parse(stored);
+            let expiresAt = new Date(session.expires_at);
 
-            // Check if session has expired locally
             if (expiresAt <= new Date()) {
                 localStorage.removeItem('debugphp_session');
                 return null;
@@ -501,7 +500,7 @@
      */
     async function startNewSession() {
         try {
-            var session = await createSession();
+            let session = await createSession();
             applySession(session, true);
         } catch (err) {
             console.error('Failed to create session:', err);
@@ -518,7 +517,7 @@
      * one has expired.
      */
     async function init() {
-        var stored = loadSession();
+        let stored = loadSession();
 
         if (stored) {
             // Restore existing session
@@ -529,6 +528,5 @@
         }
     }
 
-    // Start on page load
     init();
 })();

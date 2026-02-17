@@ -627,6 +627,10 @@ body {
     border-radius: 8px;
 }
 
+.detail-meta-item.full-width {
+    grid-column: span 2;
+}
+
 .detail-meta-item .dm-label {
     font-size: 10px;
     color: var(--text-muted);

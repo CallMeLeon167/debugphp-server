@@ -1,3 +1,8 @@
+<?php
+
+use DebugPHP\Server\Config;
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -5,8 +10,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DebugPHP — Dashboard</title>
-    <link href="/assets/fonts/fonts.css" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/css/dashboard.css">
+    <link href="<?= Config::siteUrl() ?>/assets/fonts/fonts.css" rel="stylesheet">
+    <link rel="stylesheet" href="<?= Config::siteUrl() ?>/assets/css/dashboard.css">
 </head>
 
 <body>
@@ -114,7 +119,7 @@
 
     </div>
 
-    <script src="/assets/js/dashboard.js"></script>
+    <script src="<?= Config::siteUrl() ?>/assets/js/dashboard.js"></script>
 </body>
 
 </html>

@@ -3,7 +3,7 @@
 /**
  * This file is part of the DebugPHP Server.
  *
- * (c) Leon Schmidt <leon@kontakt@callmeleon.de>
+ * (c) Leon Schmidt <kontakt@callmeleon.de>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -13,69 +13,67 @@
 
 declare(strict_types=1);
 
-namespace DebugPHP\Server;
+namespace DebugPHP\Server\Http;
+
+use DebugPHP\Server\Database\EntryRepository;
+use DebugPHP\Server\Database\SessionRepository;
 
 /**
- * Server-Sent Events (SSE) stream handler.
+ * Server-Sent Events (SSE) stream controller.
  *
  * Keeps an HTTP connection open and pushes new debug entries
  * to the dashboard in real-time. The browser connects using
  * the native EventSource API.
  *
- * This class is separated from the Controller because SSE requires
- * a long-running connection with a while loop, which is fundamentally
- * different from a normal request/response cycle.
+ * This class is intentionally separated from Controller because SSE requires
+ * a long-running connection with a polling loop — fundamentally different
+ * from a normal request/response cycle.
+ *
+ * GET /api/stream/{id}
  */
-final class Stream
+final class StreamController
 {
     /**
-     * The polling interval in seconds between database checks.
+     * Polling interval in seconds between database checks.
      */
     private const POLL_INTERVAL = 1;
 
     /**
-     * The maximum connection duration in seconds before forcing a reconnect.
-     * Prevents zombie connections from piling up.
+     * Maximum connection lifetime in seconds before forcing a reconnect.
+     * Prevents zombie connections from accumulating on the server.
      */
     private const MAX_LIFETIME = 300;
 
     /**
-     * The database instance for querying new entries.
-     */
-    private Database $db;
-
-    /**
-     * Creates a new stream handler.
+     * Creates a new stream controller.
      *
-     * @param Database $db The database instance.
+     * @param SessionRepository $sessions Repository for session lookups.
+     * @param EntryRepository   $entries  Repository for fetching new entries.
      */
-    public function __construct(Database $db)
-    {
-        $this->db = $db;
-    }
+    public function __construct(
+        private readonly SessionRepository $sessions,
+        private readonly EntryRepository $entries,
+    ) {}
 
     /**
      * Starts the SSE stream for a given session.
      *
-     * Sets appropriate headers, then enters a polling loop that
-     * checks for new entries every second. New entries are pushed
-     * as SSE "message" events with JSON-encoded data.
+     * Sets the required HTTP headers, then enters a polling loop that
+     * fetches new entries from the database every second and pushes them
+     * to the connected browser.
      *
-     * The stream also sends:
-     * - A "connected" event on initial connection.
-     * - A heartbeat comment every cycle to keep the connection alive.
-     * - An automatic disconnect after MAX_LIFETIME seconds.
+     * Emitted event types:
+     *   connected  - Sent once on initial connection
+     *   entry      - Sent for each new debug entry
+     *   expired    - Sent when the session has expired
+     *   reconnect  - Sent after MAX_LIFETIME (browser will auto-reconnect)
+     *   : heartbeat - Comment sent every cycle to keep the connection alive
      *
-     * The browser's EventSource will automatically reconnect using
-     * the Last-Event-ID header to resume where it left off.
-     *
-     * @param string $sessionId The session ID to stream entries for.
+     * @param string $sessionId The session ID from the URL.
      */
     public function handle(string $sessionId): void
     {
-        $session = $this->db->findSession($sessionId);
-
-        if ($session === null) {
+        if ($this->sessions->find($sessionId) === null) {
             http_response_code(404);
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode(['error' => 'Session not found or expired']);
@@ -86,58 +84,53 @@ final class Stream
         $this->setHeaders();
         $this->disableBuffering();
 
-        // Resume from Last-Event-ID if the browser is reconnecting
-        $lastId = 0;
+        // On browser reconnect: read last known entry ID from the request header
+        $lastId = isset($_SERVER['HTTP_LAST_EVENT_ID'])
+            ? (int) $_SERVER['HTTP_LAST_EVENT_ID']
+            : 0;
 
-        if (isset($_SERVER['HTTP_LAST_EVENT_ID'])) {
-            $lastId = (int) $_SERVER['HTTP_LAST_EVENT_ID'];
-        }
-
-        // Send initial connected event
         $this->sendEvent('connected', [
-            'session' => $sessionId,
+            'session'      => $sessionId,
             'resumed_from' => $lastId,
         ]);
 
         $startTime = time();
 
         while (true) {
-            // Check if client disconnected
             if (connection_aborted() !== 0) {
                 break;
             }
 
-            // Force reconnect after max lifetime
+            // Max lifetime reached — force a reconnect
             if ((time() - $startTime) >= self::MAX_LIFETIME) {
                 $this->sendEvent('reconnect', ['reason' => 'max_lifetime']);
 
                 break;
             }
 
-            // Check if session still exists
-            $session = $this->db->findSession($sessionId);
-
-            if ($session === null) {
+            // Session still valid?
+            if ($this->sessions->find($sessionId) === null) {
                 $this->sendEvent('expired', ['session' => $sessionId]);
 
                 break;
             }
 
-            // Fetch new entries
-            $entries = $this->db->getEntriesAfter($sessionId, $lastId);
+            // Fetch and push new entries
+            $newEntries = $this->entries->findNewerThan($sessionId, $lastId);
 
-            foreach ($entries as $entry) {
+            foreach ($newEntries as $entry) {
                 /** @var mixed */
                 $decodedData = json_decode($entry['data'], true);
 
                 $this->sendEvent('entry', [
-                    'id' => $entry['id'],
-                    'data' => $decodedData,
-                    'label' => $entry['label'],
-                    'color' => $entry['color'],
-                    'type' => $entry['type'],
-                    'origin' => [
+                    'id'        => $entry['id'],
+                    'data'      => $decodedData,
+                    'label'     => $entry['label'],
+                    'color'     => $entry['color'],
+                    'type'      => $entry['type'],
+                    'origin'    => [
                         'file' => $entry['origin_file'],
+                        'path' => $entry['origin_path'],
                         'line' => $entry['origin_line'],
                     ],
                     'timestamp' => $entry['timestamp'],
@@ -146,9 +139,7 @@ final class Stream
                 $lastId = (int) $entry['id'];
             }
 
-            // Heartbeat to keep connection alive
             echo ": heartbeat\n\n";
-
             $this->flush();
 
             sleep(self::POLL_INTERVAL);
@@ -158,9 +149,9 @@ final class Stream
     /**
      * Sends a single SSE event to the client.
      *
-     * @param string               $event The event name (used in addEventListener on the client).
-     * @param array<string, mixed> $data  The event data, will be JSON-encoded.
-     * @param int|null             $id    Optional event ID for resume support.
+     * @param string               $event The event name (used with addEventListener on the client).
+     * @param array<string, mixed> $data  The event data, JSON-encoded.
+     * @param int|null             $id    Optional event ID for Last-Event-ID resume support.
      */
     private function sendEvent(string $event, array $data, ?int $id = null): void
     {
@@ -187,26 +178,22 @@ final class Stream
     }
 
     /**
-     * Disables all output buffering layers to ensure
-     * data is sent to the client immediately.
+     * Disables all output buffering layers so data is sent to the client immediately.
      */
     private function disableBuffering(): void
     {
-        // Disable PHP's implicit flush
         @ini_set('output_buffering', 'Off');
         @ini_set('zlib.output_compression', '0');
 
-        // Clean all existing output buffers
         while (ob_get_level() > 0) {
             ob_end_clean();
         }
 
-        // Enable implicit flush
         ob_implicit_flush(true);
     }
 
     /**
-     * Flushes the output buffer to send data immediately.
+     * Flushes the output buffer to deliver data to the client immediately.
      */
     private function flush(): void
     {

@@ -1,0 +1,98 @@
+<?php
+
+/**
+ * This file is part of the DebugPHP Server.
+ *
+ * (c) Leon Schmidt <kontakt@callmeleon.de>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ *
+ * @see https://github.com/CallMeLeon167/debugphp-server
+ */
+
+declare(strict_types=1);
+
+namespace DebugPHP\Server;
+
+use DebugPHP\Server\Database\Connection;
+use DebugPHP\Server\Database\EntryRepository;
+use DebugPHP\Server\Database\SessionRepository;
+use DebugPHP\Server\Http\Controller;
+use DebugPHP\Server\Http\StreamController;
+
+/**
+ * Central entry point of the application.
+ *
+ * This class is responsible for:
+ * - Instantiating and wiring all dependencies
+ * - Registering all routes on the router
+ * - Dispatching the incoming HTTP request
+ *
+ * Usage (in index.php):
+ *   (new Application())->run();
+ */
+final class Application
+{
+    /**
+     * The router that manages all registered routes.
+     */
+    private Router $router;
+
+    /**
+     * Bootstraps the application and wires all dependencies.
+     *
+     * All classes are instantiated here and connected to each other.
+     * This pattern is called "Dependency Injection" — each class receives
+     * its dependencies from the outside rather than creating them itself.
+     */
+    public function __construct()
+    {
+        Config::init();
+
+        $connection = new Connection();
+        $sessionRepository = new SessionRepository($connection);
+        $entryRepository   = new EntryRepository($connection);
+        $controller       = new Controller($sessionRepository, $entryRepository);
+        $streamController = new StreamController($sessionRepository, $entryRepository);
+
+        $this->router = new Router();
+        $this->registerRoutes($controller, $streamController);
+    }
+
+    /**
+     * Dispatches the incoming HTTP request.
+     *
+     * Reads the current URL and HTTP method and passes them to the router.
+     * The router then decides which controller method to call.
+     */
+    public function run(): void
+    {
+        $request = Request::fromGlobals();
+        $this->router->dispatch($request);
+    }
+
+    /**
+     * Registers all application routes.
+     *
+     * Each route consists of:
+     * - An HTTP method (GET, POST, DELETE)
+     * - A URL pattern (exact path or with {placeholders})
+     * - A callback that is invoked on match
+     *
+     * @param Controller       $controller       The HTTP controller.
+     * @param StreamController $streamController The SSE stream controller.
+     */
+    private function registerRoutes(Controller $controller, StreamController $streamController): void
+    {
+        $this->router->get('/', [$controller, 'dashboard']);
+
+        $this->router->post('/api/session', [$controller, 'createSession']);
+        $this->router->delete('/api/session/{id}', [$controller, 'deleteSession']);
+
+        $this->router->post('/api/debug', [$controller, 'storeEntry']);
+        $this->router->post('/api/clear', [$controller, 'clearEntries']);
+
+        $this->router->get('/api/stream/{id}', [$streamController, 'handle']);
+    }
+}

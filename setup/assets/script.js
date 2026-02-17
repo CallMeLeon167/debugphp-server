@@ -1,10 +1,12 @@
 (function () {
     'use strict';
 
-    var connectionTested = false;
+    let connectionTested = false;
 
     function getFormData() {
         return {
+            site_url: document.getElementById('siteUrl').value,
+            app_name: document.getElementById('appName').value,
             db_host: document.getElementById('dbHost').value,
             db_port: document.getElementById('dbPort').value,
             db_database: document.getElementById('dbDatabase').value,
@@ -15,13 +17,13 @@
     }
 
     function showAlert(id, type, message) {
-        var el = document.getElementById(id);
+        let el = document.getElementById(id);
         el.className = 'alert ' + type + ' visible';
         el.textContent = message;
     }
 
     function setLoading(btnId, loading) {
-        var btn = document.getElementById(btnId);
+        let btn = document.getElementById(btnId);
         if (loading) {
             btn.classList.add('loading');
             btn.disabled = true;
@@ -32,8 +34,8 @@
     }
 
     function setStep(step) {
-        for (var i = 1; i <= 3; i++) {
-            var dot = document.getElementById('stepDot' + i);
+        for (let i = 1; i <= 3; i++) {
+            let dot = document.getElementById('stepDot' + i);
             dot.classList.remove('active', 'done');
             if (i < step) dot.classList.add('done');
             else if (i === step) dot.classList.add('active');
@@ -45,16 +47,14 @@
     window.testConnection = async function () {
         setLoading('btnTest', true);
         try {
-            var data = getFormData();
+            let data = getFormData();
             data.action = 'test';
-            var response = await fetch('/setup/', {
+            let response = await fetch('/setup/', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
             });
-            var result = await response.json();
+            let result = await response.json();
             if (result.success) {
                 showAlert('alertTest', 'success', result.message);
                 connectionTested = true;
@@ -74,16 +74,14 @@
         if (!connectionTested) return;
         setLoading('btnNext', true);
         try {
-            var data = getFormData();
+            let data = getFormData();
             data.action = 'save_env';
-            var response = await fetch('/setup/', {
+            let response = await fetch('/setup/', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
             });
-            var result = await response.json();
+            let result = await response.json();
             if (result.success) {
                 document.getElementById('step1').style.display = 'none';
                 document.getElementById('step2').style.display = 'block';
@@ -100,16 +98,14 @@
     window.runSetup = async function () {
         setLoading('btnSetup', true);
         try {
-            var data = getFormData();
+            let data = getFormData();
             data.action = 'setup';
-            var response = await fetch('/setup/', {
+            let response = await fetch('/setup/', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
             });
-            var result = await response.json();
+            let result = await response.json();
             if (result.success) {
                 document.getElementById('step2').style.display = 'none';
                 document.getElementById('step3').style.display = 'block';
@@ -129,7 +125,7 @@
         setStep(1);
     };
 
-    document.querySelectorAll('.form-input').forEach(function (input) {
+    document.querySelectorAll('#dbHost, #dbPort, #dbDatabase, #dbUsername, #dbPassword').forEach(function (input) {
         input.addEventListener('input', function () {
             connectionTested = false;
             document.getElementById('btnNext').disabled = true;
