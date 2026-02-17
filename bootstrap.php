@@ -14,7 +14,13 @@
 declare(strict_types=1);
 
 // ─── Autoloader ──────────────────────────────────────────
-require_once __DIR__ . '/vendor/autoload.php';
+$autloader = __DIR__ . '/vendor/autoload.php';
+if (file_exists($autloader)) {
+    require_once $autloader;
+} else {
+    header('Location: /setup/');
+    exit;
+}
 
 // ─── Environment ─────────────────────────────────────────
 // Redirect to setup wizard if no .env file exists

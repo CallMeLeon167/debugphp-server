@@ -30,7 +30,13 @@ declare(strict_types=1);
 const ALLOW_SETUP = false;
 
 // ─── Autoloader ──────────────────────────────────────────
-require_once __DIR__ . '/../vendor/autoload.php';
+$autloader = __DIR__ . '/../vendor/autoload.php';
+if (file_exists($autloader)) {
+    require_once $autloader;
+} else {
+    showRunComposerInstall();
+    exit;
+}
 
 // ─── Check if Already Configured ─────────────────────────
 $rootDir = dirname(__DIR__);
@@ -274,6 +280,37 @@ function showConfiguredScreen(): void
                 <code>ALLOW_SETUP</code> to <code>true</code> in <code>setup/index.php</code>
             </div>
             <a href="/" class="btn-open-dashboard">Open Dashboard &rarr;</a>
+        </div>
+    </body>
+
+    </html>
+<?php
+}
+
+function showRunComposerInstall(): void
+{
+?>
+    <!DOCTYPE html>
+    <html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>DebugPHP — Setup</title>
+        <link href="/assets/fonts/fonts.css" rel="stylesheet">
+        <link rel="stylesheet" href="/setup/styles.css">
+    </head>
+
+    <body>
+        <div class="card configured-card">
+            <div class="icon">&#9888;</div>
+            <h2>DebugPHP not ready yet</h2>
+            <p>To setup DebugPHP, please run</p>
+            <div class="hint space-m">
+                <code>composer install</code>
+            </div>
+            <p>in the project root. This will install all necessary dependencies.</p><br>
+            <a href="/setup/" class="btn btn-primary">Refresh Page</a>
         </div>
     </body>
 
