@@ -309,7 +309,6 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 20px;
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border);
 }
@@ -317,16 +316,19 @@ body {
 .debug-toolbar-left {
     display: flex;
     align-items: center;
-    gap: 16px;
 }
 
-.entry-count {
+.entry-count,
+.custom-count {
     font-family: 'JetBrains Mono', monospace;
     font-size: 12px;
     color: var(--text-muted);
+    border-right: 1px solid var(--border);
+    padding: 10px 20px;
 }
 
-.entry-count strong {
+.entry-count strong,
+.custom-count strong {
     color: var(--text-primary);
 }
 
@@ -337,6 +339,7 @@ body {
     font-size: 12px;
     color: var(--text-muted);
     cursor: pointer;
+    padding: 10px 20px;
 }
 
 .toggle-track {
