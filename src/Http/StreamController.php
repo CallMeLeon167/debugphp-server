@@ -120,7 +120,7 @@ final class StreamController
 
             foreach ($newEntries as $entry) {
                 /** @var mixed */
-                $decodedData = json_decode($entry['data'], true);
+                $decodedData = unserialize(base64_decode($entry['data']));
 
                 $this->sendEvent('entry', [
                     'id'        => $entry['id'],
