@@ -102,8 +102,6 @@ body {
 .topbar-logo {
     display: flex;
     align-items: center;
-    gap: var(--space-xs);
-    font-family: var(--font-mono);
     font-weight: 700;
     font-size: 15px;
     color: var(--text-primary);
@@ -206,6 +204,10 @@ body {
 
 .topbar-btn.new-session:hover {
     box-shadow: 0 0 var(--space-md) var(--accent-mid);
+}
+
+.php-highlight {
+    color: var(--accent)
 }
 
 /* ─── Editor Picker ──────────────────────────────────────── */

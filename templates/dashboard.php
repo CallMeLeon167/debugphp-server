@@ -20,7 +20,7 @@ use DebugPHP\Server\Config;
     <div class="topbar">
         <div class="topbar-left">
             <a href="https://debugphp.dev" class="topbar-logo" target="_blank">
-                DebugPHP
+                Debug<span class="php-highlight">PHP</span>
             </a>
             <div class="topbar-divider"></div>
             <div class="session-info" id="sessionInfo">
