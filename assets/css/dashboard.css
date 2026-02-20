@@ -300,7 +300,6 @@ body {
     opacity: 1;
 }
 
-/* Origin link when editor is active */
 .has-editor .entry-origin {
     cursor: pointer;
     color: var(--accent);
@@ -320,7 +319,6 @@ body {
     text-decoration-style: solid;
 }
 
-/* Without editor: keep existing behaviour */
 .entry-origin {
     font-family: var(--font-mono);
     font-size: var(--text-sm);
@@ -334,7 +332,6 @@ body {
     opacity: 1;
 }
 
-/* "Open in Editor" button inside detail panel */
 .detail-open-btn {
     display: inline-flex;
     align-items: center;
@@ -718,6 +715,57 @@ body {
     font-family: var(--font-mono);
     font-size: var(--text-base);
     line-height: 1.7;
+}
+
+/* ─── Entry Delete Button ────────────────────────────────── */
+
+.entry-delete-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
+    padding: 0;
+    margin-left: 4px;
+}
+
+.log-entry:hover .entry-delete-btn {
+    opacity: 1;
+}
+
+.entry-delete-btn:hover {
+    color: var(--red);
+    background: rgba(248, 113, 113, 0.12);
+}
+
+/* ─── Entry Delete Animation ─────────────────────────────── */
+
+@keyframes entryDeleteOut {
+    0% {
+        opacity: 1;
+        background: transparent;
+        border-color: transparent;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+.log-entry.is-deleting {
+    animation: entryDeleteOut 0.3s ease forwards;
+    pointer-events: none;
+    overflow: hidden;
 }
 
 /* ─── Detail Panel ───────────────────────────────────────── */

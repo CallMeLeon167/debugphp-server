@@ -353,6 +353,10 @@
                 '</span>';
         }
 
+        originHtml +=
+            '<button class="entry-delete-btn" title="Delete entry" data-entry-id="' + String(entry.id) + '">&#xd7;</button>';
+
+
         let content = entry.type === 'table'
             ? formatTable(entry.data)
             : formatData(entry.data);
@@ -369,6 +373,7 @@
             '</div>';
 
         el.addEventListener('click', function () {
+            if (e.target.closest('.entry-delete-btn')) return;
             selectEntry(entry, el);
         });
 
@@ -392,6 +397,33 @@
         // Auto-scroll
         if (autoScroll) {
             dom.debugLog.scrollTop = dom.debugLog.scrollHeight;
+        }
+    }
+
+    /**
+     * Sends a DELETE request to remove a single entry from the server.
+     *
+     * @param {number} entryId   - The numeric entry ID.
+     * @param {string} sessionId - The current session ID (for ownership check).
+     * @returns {Promise<boolean>} True if the server confirmed deletion.
+     */
+    async function deleteEntry(entryId, currentSessionId) {
+        try {
+            const response = await fetch('/api/entry/' + entryId, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session: currentSessionId }),
+            });
+
+            if (!response.ok) {
+                return false;
+            }
+
+            const result = await response.json();
+            return result.deleted === true;
+        } catch (err) {
+            console.error('Failed to delete entry:', err);
+            return false;
         }
     }
 
@@ -778,6 +810,47 @@
         let path = btn.dataset.path || '';
         let line = parseInt(btn.dataset.line || '0', 10);
         openInEditor(path, file, line);
+    });
+
+    // Delete entry via event delegation on the log container
+    dom.debugLog.addEventListener('click', function (e) {
+        let btn = e.target.closest('.entry-delete-btn');
+        if (!btn) return;
+
+        e.stopPropagation();
+
+        let entryId = parseInt(btn.dataset.entryId || '0', 10);
+        if (!entryId || !sessionId) return;
+
+        let logEntry = btn.closest('.log-entry');
+        if (!logEntry) return;
+
+        logEntry.classList.add('is-deleting');
+
+        deleteEntry(entryId, sessionId).then(function (success) {
+            if (success) {
+                let type = logEntry.dataset.type || 'info';
+                stats.total = Math.max(0, stats.total - 1);
+                if (type === 'error') stats.errors = Math.max(0, stats.errors - 1);
+                if (type === 'sql') stats.sql = Math.max(0, stats.sql - 1);
+                updateStats();
+
+                if (logEntry.classList.contains('selected')) {
+                    dom.detailPanel.classList.add('hidden');
+                }
+
+                setTimeout(function () {
+                    logEntry.remove();
+
+                    let remaining = dom.debugLog.querySelectorAll('.log-entry');
+                    if (remaining.length === 0) {
+                        dom.emptyState.style.display = 'flex';
+                    }
+                }, 300);
+            } else {
+                logEntry.classList.remove('is-deleting');
+            }
+        });
     });
 
     // ─── Session Timer ──────────────────────────────────────

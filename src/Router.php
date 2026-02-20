@@ -19,16 +19,8 @@ namespace DebugPHP\Server;
  * Simple HTTP router.
  *
  * Allows registering routes by HTTP method and URL pattern.
- * URL placeholders like {id} are automatically extracted as parameters
+ * URL placeholders are automatically extracted as parameters
  * and passed to the matching controller method.
- *
- * Example:
- *   $router->get('/api/session/{id}', [$controller, 'show']);
- *   // Request: GET /api/session/abc123 → $controller->show('abc123')
- *
- * Supported URL patterns:
- *   - Exact path:       /api/session
- *   - With placeholder: /api/session/{id}   → expects [a-f0-9]{32}
  */
 final class Router
 {
@@ -126,8 +118,9 @@ final class Router
     /**
      * Adds a route and converts the path into a regex pattern.
      *
-     * Placeholders like {id} are converted into named capture groups:
-     *   /api/session/{id}  →  #^/api/session/(?P<id>[a-f0-9]{32})$#
+     * Supports two placeholder types:
+     *   {name}      → (?P<name>[a-f0-9]{32})  matches 32-char hex session IDs
+     *   {name:int}  → (?P<name>\d+)            matches numeric entry IDs
      *
      * @param string   $method   HTTP method (GET, POST, DELETE).
      * @param string   $path     The URL path with optional {placeholders}.
@@ -137,14 +130,18 @@ final class Router
     {
         $params = [];
 
-        // {id} → (?P<id>[a-f0-9]{32}) — matches 32-char hex IDs like session tokens
         $pattern = preg_replace_callback(
-            '/\{([a-z_]+)\}/',
+            '/\{([a-z_]+)(?::([a-z]+))?\}/',
             static function (array $matches) use (&$params): string {
                 /** @var list<string> $params */
                 $params[] = $matches[1];
 
-                return '(?P<' . $matches[1] . '>[a-f0-9]{32})';
+                $type = $matches[2] ?? 'hex';
+
+                return match ($type) {
+                    'int'   => '(?P<' . $matches[1] . '>\d+)',
+                    default => '(?P<' . $matches[1] . '>[a-f0-9]{32})',
+                };
             },
             $path,
         );

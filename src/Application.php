@@ -81,6 +81,9 @@ final class Application
         $this->router->delete('/api/session/{id}', [$controller, 'deleteSession']);
 
         $this->router->post('/api/debug', [$controller, 'storeEntry']);
+
+        $this->router->delete('/api/entry/{id:int}', [$controller, 'deleteEntry']);
+
         $this->router->post('/api/clear', [$controller, 'clearEntries']);
 
         $this->router->post('/api/metric', [$controller, 'storeMetric']);

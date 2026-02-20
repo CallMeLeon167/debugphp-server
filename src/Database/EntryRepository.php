@@ -117,6 +117,30 @@ final class EntryRepository
     }
 
     /**
+     * Deletes a single entry by its ID, scoped to the given session.
+     *
+     * The session_id check ensures a client can only delete entries
+     * belonging to their own session — no cross-session deletion possible.
+     *
+     * @param int    $entryId   The entry ID to delete.
+     * @param string $sessionId The session the entry must belong to.
+     *
+     * @return bool True if the entry was found and deleted.
+     */
+    public function deleteById(int $entryId, string $sessionId): bool
+    {
+        $stmt = $this->pdo->prepare(
+            'DELETE FROM entries WHERE id = :id AND session_id = :session_id'
+        );
+        $stmt->execute([
+            'id'         => $entryId,
+            'session_id' => $sessionId,
+        ]);
+
+        return $stmt->rowCount() > 0;
+    }
+
+    /**
      * Deletes all entries for a session.
      *
      * The session itself remains active — only its entries are removed.

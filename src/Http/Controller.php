@@ -26,14 +26,6 @@ use DebugPHP\Server\Request;
  * Each public method corresponds to a route registered in Application::registerRoutes().
  * The controller reads input from the Request object, delegates work to the
  * repositories, and sends a JSON response.
- *
- * Routes:
- *   GET    /                   → dashboard()
- *   POST   /api/session        → createSession()
- *   DELETE /api/session/{id}   → deleteSession($id)
- *   POST   /api/debug          → storeEntry()
- *   POST   /api/clear          → clearEntries()
- *   POST   /api/metric         → storeMetric()
  */
 final class Controller
 {
@@ -157,6 +149,52 @@ final class Controller
         );
 
         $this->json(['id' => $entryId], 201);
+    }
+
+    /**
+     * Deletes a single debug entry by its ID.
+     *
+     * DELETE /api/entry/{id:int}
+     *
+     * Expected JSON body:
+     *   session (string) Session ID — ensures only the owning session can delete
+     *
+     * Response: 200 { deleted: true } or 400/404 on error.
+     *
+     * @param string $id The entry ID from the URL (numeric string).
+     */
+    public function deleteEntry(string $id): void
+    {
+        $entryId = (int) $id;
+
+        if ($entryId <= 0) {
+            $this->json(['error' => 'Invalid entry ID'], 400);
+
+            return;
+        }
+
+        $request   = Request::fromGlobals();
+        $sessionId = $request->getString('session');
+
+        if ($sessionId === '') {
+            $this->json(['error' => 'Missing session ID'], 400);
+
+            return;
+        }
+
+        if ($this->sessions->find($sessionId) === null) {
+            $this->json(['error' => 'Session not found or expired'], 404);
+
+            return;
+        }
+
+        if (!$this->entries->deleteById($entryId, $sessionId)) {
+            $this->json(['error' => 'Entry not found'], 404);
+
+            return;
+        }
+
+        $this->json(['deleted' => true]);
     }
 
     /**
