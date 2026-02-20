@@ -215,6 +215,7 @@ final class SetupManager
                 CREATE TABLE IF NOT EXISTS entries (
                     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
                     session_id VARCHAR(32) NOT NULL,
+                    request_id VARCHAR(16) NOT NULL,
                     data JSON NOT NULL,
                     label VARCHAR(255) NOT NULL DEFAULT \'\',
                     color VARCHAR(20) NOT NULL DEFAULT \'gray\',

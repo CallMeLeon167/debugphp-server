@@ -136,17 +136,18 @@ final class StreamController
                 $decodedData = unserialize(base64_decode($entry['data']));
 
                 $this->sendEvent('entry', [
-                    'id'        => $entry['id'],
-                    'data'      => $decodedData,
-                    'label'     => $entry['label'],
-                    'color'     => $entry['color'],
-                    'type'      => $entry['type'],
-                    'origin'    => [
+                    'id'         => $entry['id'],
+                    'request_id' => $entry['request_id'],
+                    'data'       => $decodedData,
+                    'label'      => $entry['label'],
+                    'color'      => $entry['color'],
+                    'type'       => $entry['type'],
+                    'origin'     => [
                         'file' => $entry['origin_file'],
                         'path' => $entry['origin_path'],
                         'line' => $entry['origin_line'],
                     ],
-                    'timestamp' => $entry['timestamp'],
+                    'timestamp'  => $entry['timestamp'],
                 ], (int) $entry['id']);
 
                 $lastId = (int) $entry['id'];

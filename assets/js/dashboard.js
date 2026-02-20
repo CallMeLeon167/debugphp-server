@@ -17,6 +17,8 @@
     let searchQuery = '';
     let selectedEntryId = null;
     let stats = { total: 0, errors: 0, sql: 0 };
+    let lastRequestId = null;
+    let autoClear = localStorage.getItem('debugphp_autoclear') === 'true';
 
     // ─── Editor Picker ──────────────────────────────────────
 
@@ -146,6 +148,7 @@
         autoScrollToggle: document.getElementById('autoScrollToggle'),
         searchInput: document.getElementById('searchInput'),
         pauseBtn: document.getElementById('pauseBtn'),
+        autoClearBtn: document.getElementById('autoClearBtn'),
         detailPanel: document.getElementById('detailPanel'),
         detailBody: document.getElementById('detailBody'),
         statTotal: document.getElementById('statTotal'),
@@ -200,6 +203,77 @@
         });
     }
 
+    /**
+     * Sends a DELETE request to remove a single entry from the server.
+     *
+     * @param {number} entryId         - The numeric entry ID.
+     * @param {string} currentSessionId - The current session ID (for ownership check).
+     * @returns {Promise<boolean>} True if the server confirmed deletion.
+     */
+    async function deleteEntry(entryId, currentSessionId) {
+        try {
+            const response = await fetch('/api/entry/' + entryId, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session: currentSessionId }),
+            });
+
+            if (!response.ok) {
+                return false;
+            }
+
+            const result = await response.json();
+            return result.deleted === true;
+        } catch (err) {
+            console.error('Failed to delete entry:', err);
+            return false;
+        }
+    }
+
+    // ─── Auto-Clear ──────────────────────────────────────────
+
+    /**
+     * Syncs the auto-clear button appearance with the current state.
+     * Active state is visually indicated via the `.active` CSS class.
+     */
+    function updateAutoClearBtn() {
+        dom.autoClearBtn.classList.toggle('active', autoClear);
+    }
+
+    /**
+     * Clears all entries from the DOM only, without calling the server.
+     *
+     * Used internally by the auto-clear logic — the server-side clear is
+     * triggered separately via clearSession() to keep them decoupled.
+     */
+    function clearDomEntries() {
+        dom.debugLog.innerHTML = '';
+        dom.emptyState.style.display = 'flex';
+        dom.detailPanel.classList.add('hidden');
+        stats = { total: 0, errors: 0, sql: 0 };
+        updateStats();
+    }
+
+    /**
+     * Checks whether the given entry signals a new PHP request.
+     *
+     * Called before rendering each incoming entry. If auto-clear is active
+     * and a different request_id is detected, the dashboard clears all previous
+     * entries (both DOM and server-side) before rendering the new one.
+     *
+     * @param {string} requestId - The request_id from the incoming SSE entry.
+     */
+    function handleRequestIdChange(requestId) {
+        if (!requestId) return;
+
+        if (lastRequestId !== null && requestId !== lastRequestId && autoClear) {
+            clearDomEntries();
+            clearSession();
+        }
+
+        lastRequestId = requestId;
+    }
+
     // ─── SSE Connection ─────────────────────────────────────
 
     /**
@@ -222,6 +296,9 @@
             if (paused) return;
 
             let data = JSON.parse(e.data);
+
+            handleRequestIdChange(data.request_id || '');
+
             addEntry(data);
         });
 
@@ -356,7 +433,6 @@
         originHtml +=
             '<button class="entry-delete-btn" title="Delete entry" data-entry-id="' + String(entry.id) + '">&#xd7;</button>';
 
-
         let content = entry.type === 'table'
             ? formatTable(entry.data)
             : formatData(entry.data);
@@ -372,7 +448,7 @@
             '<div class="entry-content">' + content + '</div>' +
             '</div>';
 
-        el.addEventListener('click', function () {
+        el.addEventListener('click', function (e) {
             if (e.target.closest('.entry-delete-btn')) return;
             selectEntry(entry, el);
         });
@@ -397,33 +473,6 @@
         // Auto-scroll
         if (autoScroll) {
             dom.debugLog.scrollTop = dom.debugLog.scrollHeight;
-        }
-    }
-
-    /**
-     * Sends a DELETE request to remove a single entry from the server.
-     *
-     * @param {number} entryId   - The numeric entry ID.
-     * @param {string} sessionId - The current session ID (for ownership check).
-     * @returns {Promise<boolean>} True if the server confirmed deletion.
-     */
-    async function deleteEntry(entryId, currentSessionId) {
-        try {
-            const response = await fetch('/api/entry/' + entryId, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ session: currentSessionId }),
-            });
-
-            if (!response.ok) {
-                return false;
-            }
-
-            const result = await response.json();
-            return result.deleted === true;
-        } catch (err) {
-            console.error('Failed to delete entry:', err);
-            return false;
         }
     }
 
@@ -734,24 +783,25 @@
         dom.pauseBtn.innerHTML = paused ? '&#9654; Resume' : '&#10074;&#10074; Pause';
     });
 
+    // Auto-clear toggle
+    dom.autoClearBtn.addEventListener('click', function () {
+        autoClear = !autoClear;
+        localStorage.setItem('debugphp_autoclear', String(autoClear));
+        updateAutoClearBtn();
+    });
+
     // Clear
     document.getElementById('clearBtn').addEventListener('click', function () {
         clearSession();
-        dom.debugLog.innerHTML = '';
-        dom.emptyState.style.display = 'flex';
-        dom.detailPanel.classList.add('hidden');
-        stats = { total: 0, errors: 0, sql: 0 };
-        updateStats();
+        clearDomEntries();
+        lastRequestId = null;
     });
 
     // New session
     document.getElementById('newSessionBtn').addEventListener('click', function () {
-        dom.debugLog.innerHTML = '';
-        dom.emptyState.style.display = 'flex';
-        dom.detailPanel.classList.add('hidden');
-        stats = { total: 0, errors: 0, sql: 0 };
-        updateStats();
+        clearDomEntries();
         clearMetrics();
+        lastRequestId = null;
         startNewSession();
     });
 
@@ -768,51 +818,8 @@
         if (prev) prev.classList.remove('selected');
     });
 
-    // ─── Editor Picker Events ────────────────────────────────
+    // ─── Delete Entry (event delegation) ─────────────────────
 
-    // Toggle editor dropdown
-    document.getElementById('editorPickerBtn').addEventListener('click', function (e) {
-        e.stopPropagation();
-        let dropdown = document.getElementById('editorDropdown');
-        let isVisible = dropdown.style.display !== 'none';
-        dropdown.style.display = isVisible ? 'none' : 'block';
-    });
-
-    // Close dropdown when clicking outside
-    document.addEventListener('click', function (e) {
-        let picker = document.getElementById('editorPicker');
-        if (picker && !picker.contains(e.target)) {
-            closeEditorDropdown();
-        }
-    });
-
-    // Origin click in log → open in editor (event delegation)
-    dom.debugLog.addEventListener('click', function (e) {
-        if (activeEditor === 'none') return;
-
-        let originEl = e.target.closest('.entry-origin');
-        if (!originEl) return;
-
-        e.stopPropagation();
-
-        let file = originEl.dataset.file || '';
-        let path = originEl.dataset.path || '';
-        let line = parseInt(originEl.dataset.line || '0', 10);
-        openInEditor(path, file, line);
-    });
-
-    // "Open in Editor" button in detail panel (event delegation)
-    dom.detailBody.addEventListener('click', function (e) {
-        let btn = e.target.closest('.detail-open-btn');
-        if (!btn) return;
-
-        let file = btn.dataset.file || '';
-        let path = btn.dataset.path || '';
-        let line = parseInt(btn.dataset.line || '0', 10);
-        openInEditor(path, file, line);
-    });
-
-    // Delete entry via event delegation on the log container
     dom.debugLog.addEventListener('click', function (e) {
         let btn = e.target.closest('.entry-delete-btn');
         if (!btn) return;
@@ -851,6 +858,46 @@
                 logEntry.classList.remove('is-deleting');
             }
         });
+    });
+
+    // ─── Editor Picker Events ────────────────────────────────
+
+    document.getElementById('editorPickerBtn').addEventListener('click', function (e) {
+        e.stopPropagation();
+        let dropdown = document.getElementById('editorDropdown');
+        let isVisible = dropdown.style.display !== 'none';
+        dropdown.style.display = isVisible ? 'none' : 'block';
+    });
+
+    document.addEventListener('click', function (e) {
+        let picker = document.getElementById('editorPicker');
+        if (picker && !picker.contains(e.target)) {
+            closeEditorDropdown();
+        }
+    });
+
+    dom.debugLog.addEventListener('click', function (e) {
+        if (activeEditor === 'none') return;
+
+        let originEl = e.target.closest('.entry-origin');
+        if (!originEl) return;
+
+        e.stopPropagation();
+
+        let file = originEl.dataset.file || '';
+        let path = originEl.dataset.path || '';
+        let line = parseInt(originEl.dataset.line || '0', 10);
+        openInEditor(path, file, line);
+    });
+
+    dom.detailBody.addEventListener('click', function (e) {
+        let btn = e.target.closest('.detail-open-btn');
+        if (!btn) return;
+
+        let file = btn.dataset.file || '';
+        let path = btn.dataset.path || '';
+        let line = parseInt(btn.dataset.line || '0', 10);
+        openInEditor(path, file, line);
     });
 
     // ─── Session Timer ──────────────────────────────────────
@@ -935,12 +982,9 @@
         dom.sessionInfo.classList.remove('disconnected');
 
         if (isNew) {
-            dom.debugLog.innerHTML = '';
-            dom.emptyState.style.display = 'flex';
-            dom.detailPanel.classList.add('hidden');
-            stats = { total: 0, errors: 0, sql: 0 };
-            updateStats();
+            clearDomEntries();
             clearMetrics();
+            lastRequestId = null;
         }
 
         saveSession(session);
@@ -970,6 +1014,7 @@
     async function init() {
         renderEditorOptions();
         updateEditorState();
+        updateAutoClearBtn();
 
         let stored = loadSession();
 

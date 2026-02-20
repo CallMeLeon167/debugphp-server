@@ -105,13 +105,14 @@ final class Controller
      * POST /api/debug
      *
      * Expected JSON body:
-     *   session   (string) Session ID
-     *   data      (mixed)  The debug data
-     *   label     (string) Optional display label
-     *   color     (string) Optional color
-     *   type      (string) Optional type
-     *   origin    (object) Optional {file, line}
-     *   timestamp (float)  Optional, defaults to microtime(true)
+     *   session    (string) Session ID
+     *   request_id (string) Request lifecycle ID from Debug::init()
+     *   data       (mixed)  The debug data
+     *   label      (string) Optional display label
+     *   color      (string) Optional color
+     *   type       (string) Optional type
+     *   origin     (object) Optional {file, path, line}
+     *   timestamp  (float)  Optional, defaults to microtime(true)
      *
      * Response: 201 with the ID of the new entry.
      */
@@ -138,6 +139,7 @@ final class Controller
 
         $entryId = $this->entries->insert(
             sessionId: $sessionId,
+            requestId: $request->getString('request_id'),
             data: $request->get('data') ?? '',
             label: $request->getString('label'),
             color: $request->getString('color', 'gray'),
