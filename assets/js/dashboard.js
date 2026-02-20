@@ -18,6 +18,124 @@
     let selectedEntryId = null;
     let stats = { total: 0, errors: 0, sql: 0 };
 
+    // ─── Editor Picker ──────────────────────────────────────
+
+    /**
+     * Supported editors with their deep-link URL schemes.
+     *
+     * Placeholders:
+     *   {fullpath} — absolute path including filename
+     *   {line}     — line number
+     *
+     * @type {Array<{id: string, label: string, scheme: string|null}>}
+     */
+    const EDITORS = [
+        { id: 'none', label: 'None (disabled)', scheme: null },
+        { id: 'vscode', label: 'VS Code', scheme: 'vscode://file/{fullpath}:{line}' },
+        { id: 'vscode-insiders', label: 'VS Code Insiders', scheme: 'vscode-insiders://file/{fullpath}:{line}' },
+        { id: 'cursor', label: 'Cursor', scheme: 'cursor://file/{fullpath}:{line}' },
+        { id: 'phpstorm', label: 'PhpStorm', scheme: 'phpstorm://open?file={fullpath}&line={line}' },
+        { id: 'sublime', label: 'Sublime Text', scheme: 'subl://open?url=file://{fullpath}&line={line}' },
+    ];
+
+    /** Currently selected editor ID, persisted in localStorage (user-specific). */
+    let activeEditor = localStorage.getItem('debugphp_editor') || 'none';
+
+    /**
+     * Builds the editor deep-link URL for the given file and line.
+     *
+     * @param {string} editorId - The editor ID from EDITORS.
+     * @param {string} fullPath - The absolute file path (directory + filename).
+     * @param {number} line     - The line number.
+     * @returns {string|null} The editor URL or null if editor is 'none'.
+     */
+    function buildEditorUrl(editorId, fullPath, line) {
+        let editor = EDITORS.find(function (e) { return e.id === editorId; });
+        if (!editor || !editor.scheme) return null;
+
+        return editor.scheme
+            .replace('{fullpath}', encodeURIComponent(fullPath).replace(/%2F/g, '/'))
+            .replace('{line}', String(line));
+    }
+
+    /**
+     * Opens the given file and line in the currently selected editor.
+     *
+     * @param {string} path - Directory path of the file.
+     * @param {string} file - Filename (basename).
+     * @param {number} line - Line number.
+     */
+    function openInEditor(path, file, line) {
+        if (activeEditor === 'none') return;
+
+        let fullPath = (path && path !== 'unknown')
+            ? (path.replace(/\/$/, '') + '/' + file)
+            : file;
+
+        let url = buildEditorUrl(activeEditor, fullPath, line);
+        if (url) window.location.href = url;
+    }
+
+    /**
+     * Renders the editor dropdown option list and updates the topbar button label.
+     * Called once on init and whenever the selection changes.
+     */
+    function renderEditorOptions() {
+        let list = document.getElementById('editorOptionsList');
+        let label = document.getElementById('editorPickerLabel');
+
+        if (!list || !label) return;
+
+        list.innerHTML = '';
+
+        EDITORS.forEach(function (editor) {
+            let isActive = editor.id === activeEditor;
+
+            let option = document.createElement('button');
+            option.className = 'editor-option' + (isActive ? ' active' : '');
+            option.dataset.editorId = editor.id;
+            option.innerHTML =
+                '<span class="editor-option-label">' + escapeHtml(editor.label) + '</span>' +
+                '<span class="editor-option-check">&#10003;</span>';
+
+            option.addEventListener('click', function () {
+                activeEditor = editor.id;
+                localStorage.setItem('debugphp_editor', activeEditor);
+                updateEditorState();
+                closeEditorDropdown();
+            });
+
+            list.appendChild(option);
+        });
+
+        let currentEditor = EDITORS.find(function (e) { return e.id === activeEditor; });
+        label.textContent = (currentEditor && currentEditor.id !== 'none')
+            ? currentEditor.label
+            : 'Editor';
+    }
+
+    /**
+     * Syncs all origin elements in the log to reflect the current editor state.
+     * Adds/removes the `clickable` class and cursor styling.
+     */
+    function updateEditorState() {
+        renderEditorOptions();
+
+        let hasEditor = activeEditor !== 'none';
+        document.body.classList.toggle('has-editor', hasEditor);
+
+        let btn = document.getElementById('editorPickerBtn');
+        if (btn) btn.classList.toggle('active', hasEditor);
+    }
+
+    /**
+     * Closes the editor dropdown.
+     */
+    function closeEditorDropdown() {
+        let dropdown = document.getElementById('editorDropdown');
+        if (dropdown) dropdown.style.display = 'none';
+    }
+
     // ─── DOM Elements ───────────────────────────────────────
     const dom = {
         sessionId: document.getElementById('sessionId'),
@@ -221,10 +339,18 @@
         let labelClass = labelMap[entry.type] || 'label-info';
         let time = formatTimestamp(entry.timestamp);
         let label = entry.label || entry.type || 'info';
-        let origin = '';
 
+        let originHtml = '';
         if (entry.origin && entry.origin.file) {
-            origin = entry.origin.file + (entry.origin.line ? ':' + entry.origin.line : '');
+            let originText = entry.origin.file + (entry.origin.line ? ':' + entry.origin.line : '');
+            originHtml =
+                '<span class="entry-origin"' +
+                ' data-file="' + escapeHtml(entry.origin.file) + '"' +
+                ' data-path="' + escapeHtml(entry.origin.path || '') + '"' +
+                ' data-line="' + (entry.origin.line || 0) + '"' +
+                ' title="Open in editor">' +
+                escapeHtml(originText) +
+                '</span>';
         }
 
         let content = entry.type === 'table'
@@ -237,7 +363,7 @@
             '<div class="entry-header">' +
             '<span class="entry-label ' + labelClass + '">' + escapeHtml(label) + '</span>' +
             '<span class="entry-time">' + time + '</span>' +
-            (origin ? '<span class="entry-origin">' + escapeHtml(origin) + '</span>' : '') +
+            originHtml +
             '</div>' +
             '<div class="entry-content">' + content + '</div>' +
             '</div>';
@@ -440,10 +566,9 @@
 
         dom.detailPanel.classList.remove('hidden');
 
-        let origin = '';
-        if (entry.origin && entry.origin.file) {
-            origin = entry.origin.file;
-        }
+        let originFile = (entry.origin && entry.origin.file) ? entry.origin.file : 'unknown';
+        let originPath = (entry.origin && entry.origin.path) ? entry.origin.path : 'unknown';
+        let originLine = entry.origin ? entry.origin.line : 0;
 
         let dataSection;
         if (entry.type === 'table') {
@@ -463,14 +588,28 @@
                 '</div>';
         }
 
+        let pathRowContent =
+            '<div class="dm-label">Path</div>' +
+            '<div class="dm-value dm-path">' + escapeHtml(originPath) + '</div>';
+
+        if (activeEditor !== 'none') {
+            pathRowContent +=
+                '<button class="detail-open-btn" ' +
+                'data-file="' + escapeHtml(originFile) + '" ' +
+                'data-path="' + escapeHtml(originPath) + '" ' +
+                'data-line="' + originLine + '">' +
+                'Open in ' + escapeHtml(EDITORS.find(function (e) { return e.id === activeEditor; })?.label || 'Editor') +
+                '</button>';
+        }
+
         dom.detailBody.innerHTML =
             '<div class="detail-section">' +
             '<div class="detail-meta-grid">' +
             '<div class="detail-meta-item"><div class="dm-label">Type</div><div class="dm-value">' + escapeHtml(entry.type || 'info') + '</div></div>' +
             '<div class="detail-meta-item"><div class="dm-label">Time</div><div class="dm-value">' + formatTimestamp(entry.timestamp) + '</div></div>' +
-            '<div class="detail-meta-item"><div class="dm-label">File</div><div class="dm-value">' + escapeHtml(origin || 'unknown') + '</div></div>' +
-            '<div class="detail-meta-item"><div class="dm-label">Line</div><div class="dm-value">' + (entry.origin ? entry.origin.line : 0) + '</div></div>' +
-            '<div class="detail-meta-item full-width"><div class="dm-label">Path</div><div class="dm-value">' + escapeHtml(entry.origin.path) + '</div></div>' +
+            '<div class="detail-meta-item"><div class="dm-label">File</div><div class="dm-value">' + escapeHtml(originFile) + '</div></div>' +
+            '<div class="detail-meta-item"><div class="dm-label">Line</div><div class="dm-value">' + originLine + '</div></div>' +
+            '<div class="detail-meta-item full-width">' + pathRowContent + '</div>' +
             '</div>' +
             '</div>' +
             dataSection;
@@ -597,6 +736,50 @@
         if (prev) prev.classList.remove('selected');
     });
 
+    // ─── Editor Picker Events ────────────────────────────────
+
+    // Toggle editor dropdown
+    document.getElementById('editorPickerBtn').addEventListener('click', function (e) {
+        e.stopPropagation();
+        let dropdown = document.getElementById('editorDropdown');
+        let isVisible = dropdown.style.display !== 'none';
+        dropdown.style.display = isVisible ? 'none' : 'block';
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function (e) {
+        let picker = document.getElementById('editorPicker');
+        if (picker && !picker.contains(e.target)) {
+            closeEditorDropdown();
+        }
+    });
+
+    // Origin click in log → open in editor (event delegation)
+    dom.debugLog.addEventListener('click', function (e) {
+        if (activeEditor === 'none') return;
+
+        let originEl = e.target.closest('.entry-origin');
+        if (!originEl) return;
+
+        e.stopPropagation();
+
+        let file = originEl.dataset.file || '';
+        let path = originEl.dataset.path || '';
+        let line = parseInt(originEl.dataset.line || '0', 10);
+        openInEditor(path, file, line);
+    });
+
+    // "Open in Editor" button in detail panel (event delegation)
+    dom.detailBody.addEventListener('click', function (e) {
+        let btn = e.target.closest('.detail-open-btn');
+        if (!btn) return;
+
+        let file = btn.dataset.file || '';
+        let path = btn.dataset.path || '';
+        let line = parseInt(btn.dataset.line || '0', 10);
+        openInEditor(path, file, line);
+    });
+
     // ─── Session Timer ──────────────────────────────────────
     let sessionExpiresAt = null;
 
@@ -712,6 +895,9 @@
      * Only creates a new session if none is stored or the stored one has expired.
      */
     async function init() {
+        renderEditorOptions();
+        updateEditorState();
+
         let stored = loadSession();
 
         if (stored) {

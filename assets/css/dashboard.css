@@ -167,6 +167,153 @@ body {
     box-shadow: 0 0 16px var(--accent-mid);
 }
 
+/* ─── Editor Picker ──────────────────────────────────────── */
+.editor-picker {
+    position: relative;
+}
+
+.editor-picker-btn svg {
+    flex-shrink: 0;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.editor-picker-btn:hover svg {
+    opacity: 1;
+}
+
+.editor-picker-btn.active svg {
+    opacity: 1;
+}
+
+.editor-dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 6px;
+    min-width: 200px;
+    z-index: 200;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    animation: dropdownIn 0.15s ease;
+}
+
+@keyframes dropdownIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.editor-dropdown-header {
+    padding: 6px 10px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+}
+
+.editor-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 12.5px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-secondary);
+    transition: background 0.1s, color 0.1s;
+    text-align: left;
+}
+
+.editor-option:hover {
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
+}
+
+.editor-option.active {
+    color: var(--accent);
+}
+
+.editor-option-check {
+    font-size: 11px;
+    color: var(--accent);
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.editor-option.active .editor-option-check {
+    opacity: 1;
+}
+
+.has-editor .entry-origin {
+    cursor: pointer;
+    color: var(--accent);
+    opacity: 0;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+    transition: opacity 0.15s, color 0.15s;
+}
+
+.has-editor .log-entry:hover .entry-origin {
+    opacity: 1;
+}
+
+.has-editor .entry-origin:hover {
+    color: var(--text-primary);
+    text-decoration-style: solid;
+}
+
+.entry-origin {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-left: auto;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.log-entry:hover .entry-origin {
+    opacity: 1;
+}
+
+.detail-open-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 5px 12px;
+    border-radius: 7px;
+    border: 1px solid var(--accent-mid);
+    background: var(--accent-dim);
+    color: var(--accent);
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.detail-open-btn:hover {
+    background: var(--accent);
+    color: var(--bg-primary);
+    border-color: var(--accent);
+}
+
 /* ─── Layout ─────────────────────────────────────────────── */
 .main-layout {
     display: flex;
@@ -507,19 +654,6 @@ body {
     color: var(--text-muted);
 }
 
-.entry-origin {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-left: auto;
-    opacity: 0;
-    transition: opacity 0.15s;
-}
-
-.log-entry:hover .entry-origin {
-    opacity: 1;
-}
-
 .entry-content {
     font-family: 'JetBrains Mono', monospace;
     font-size: 12.5px;
@@ -646,6 +780,11 @@ body {
     font-family: 'JetBrains Mono', monospace;
     font-size: 12px;
     color: var(--text-primary);
+}
+
+.detail-meta-item .dm-path {
+    word-break: break-all;
+    color: var(--text-secondary);
 }
 
 /* ─── Empty State ────────────────────────────────────────── */

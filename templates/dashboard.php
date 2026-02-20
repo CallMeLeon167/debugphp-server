@@ -31,6 +31,23 @@ use DebugPHP\Server\Config;
             <div class="topbar-metrics" id="topbarMetrics"></div>
         </div>
         <div class="topbar-right">
+
+            <!-- Editor Picker -->
+            <div class="editor-picker" id="editorPicker">
+                <button class="topbar-btn editor-picker-btn" id="editorPickerBtn" title="Open files in editor">
+
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-code">
+                        <polyline points="16 18 22 12 16 6"></polyline>
+                        <polyline points="8 6 2 12 8 18"></polyline>
+                    </svg>
+                    <span id="editorPickerLabel">Editor</span>
+                </button>
+                <div class="editor-dropdown" id="editorDropdown" style="display:none;">
+                    <div class="editor-dropdown-header">Open files in</div>
+                    <div id="editorOptionsList"></div>
+                </div>
+            </div>
+
             <button class="topbar-btn" id="pauseBtn">&#10074;&#10074; Pause</button>
             <button class="topbar-btn danger" id="clearBtn">&#128465; Clear</button>
             <button class="topbar-btn new-session" id="newSessionBtn">+ New Session</button>
