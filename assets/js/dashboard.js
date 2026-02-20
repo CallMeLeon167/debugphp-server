@@ -475,13 +475,24 @@
         }
     }
 
+    // ─── PHP-Style Type Renderer ─────────────────────────────
+
     /**
      * Formats debug data for display in the log.
      *
-     * @param {*} data - The debug data.
+     * If the data carries a typed PHP descriptor (produced by Entry::buildTyped()),
+     * it is rendered in a var_dump-style format. Otherwise falls back to plain
+     * JSON rendering for table payloads and legacy entries.
+     *
+     * @param {*} data - The debug data from the SSE event.
      * @returns {string} HTML string.
      */
     function formatData(data) {
+        // Typed PHP descriptor: { type: 'string'|'int'|'array'|'object'|... }
+        if (data !== null && typeof data === 'object' && typeof data.type === 'string') {
+            return '<div class="php-dump">' + renderPhpNode(data, 0) + '</div>';
+        }
+
         if (data === null || data === undefined) {
             return '<span style="color:var(--text-muted)">null</span>';
         }
@@ -500,6 +511,208 @@
         }
 
         return escapeHtml(String(data));
+    }
+
+    /**
+     * Recursively renders a typed PHP descriptor node as PHP var_dump-style HTML.
+     *
+     * Expected node shapes (produced by Entry::buildTyped()):
+     *   { type: 'null' }
+     *   { type: 'bool',      value: boolean }
+     *   { type: 'int',       value: number }
+     *   { type: 'float',     value: number }
+     *   { type: 'string',    length: number, value: string }
+     *   { type: 'resource',  value: string }
+     *   { type: 'array',     length: number, value: [{key, value},...] }
+     *   { type: 'object',    class: string, length: number, value: [{key, value},...] }
+     *   { type: 'exception', class: string, value: [{key, value},...] }
+     *   { type: 'unknown',   value: string }
+     *   { type: 'truncated' }
+     *
+     * @param {Object} node   - The typed descriptor node.
+     * @param {number} depth  - Current indentation depth.
+     * @returns {string} HTML string for this node.
+     */
+    function renderPhpNode(node, depth) {
+        if (!node || typeof node.type === 'undefined') {
+            return '<span class="php-unknown">' + escapeHtml(JSON.stringify(node)) + '</span>';
+        }
+
+        var pad = phpIndent(depth);
+        var childPad = phpIndent(depth + 1);
+
+        switch (node.type) {
+
+            case 'null':
+                return '<span class="php-null">null</span>';
+
+            case 'bool':
+                return (
+                    '<span class="php-keyword">bool</span>' +
+                    '<span class="php-paren">(</span>' +
+                    '<span class="php-bool">' + (node.value ? 'true' : 'false') + '</span>' +
+                    '<span class="php-paren">)</span>'
+                );
+
+            case 'int':
+                return (
+                    '<span class="php-keyword">int</span>' +
+                    '<span class="php-paren">(</span>' +
+                    '<span class="php-number">' + escapeHtml(String(node.value)) + '</span>' +
+                    '<span class="php-paren">)</span>'
+                );
+
+            case 'float':
+                return (
+                    '<span class="php-keyword">float</span>' +
+                    '<span class="php-paren">(</span>' +
+                    '<span class="php-number">' + escapeHtml(String(node.value)) + '</span>' +
+                    '<span class="php-paren">)</span>'
+                );
+
+            case 'string':
+                return (
+                    '<span class="php-keyword">string</span>' +
+                    '<span class="php-paren">(</span>' +
+                    '<span class="php-length">' + escapeHtml(String(node.length)) + '</span>' +
+                    '<span class="php-paren">)</span> ' +
+                    '<span class="php-string">&quot;' + escapeHtml(String(node.value)) + '&quot;</span>'
+                );
+
+            case 'resource':
+                return (
+                    '<span class="php-keyword">resource</span>' +
+                    '<span class="php-paren">(</span>' +
+                    '<span class="php-classname">' + escapeHtml(String(node.value)) + '</span>' +
+                    '<span class="php-paren">)</span>'
+                );
+
+            case 'truncated':
+                return '<span class="php-truncated">*DEPTH LIMIT REACHED*</span>';
+
+            case 'unknown':
+                return '<span class="php-unknown">' + escapeHtml(String(node.value || '')) + '</span>';
+
+            case 'array':
+                if (node.length === 0) {
+                    return (
+                        '<span class="php-keyword">array</span>' +
+                        '<span class="php-paren">(</span>' +
+                        '<span class="php-length">0</span>' +
+                        '<span class="php-paren">)</span> ' +
+                        '<span class="php-brace">{}</span>'
+                    );
+                }
+
+                return renderPhpCollection(
+                    '<span class="php-keyword">array</span>' +
+                    '<span class="php-paren">(</span>' +
+                    '<span class="php-length">' + escapeHtml(String(node.length)) + '</span>' +
+                    '<span class="php-paren">)</span>',
+                    node.value,
+                    pad,
+                    childPad,
+                    depth,
+                    false
+                );
+
+            case 'object':
+                if (!node.value || node.value.length === 0) {
+                    return (
+                        '<span class="php-keyword">object</span>' +
+                        '<span class="php-paren">(</span>' +
+                        '<span class="php-classname">' + escapeHtml(node.class || '') + '</span>' +
+                        '<span class="php-paren">)</span>' +
+                        '<span class="php-paren">(</span>' +
+                        '<span class="php-length">0</span>' +
+                        '<span class="php-paren">)</span> ' +
+                        '<span class="php-brace">{}</span>'
+                    );
+                }
+
+                return renderPhpCollection(
+                    '<span class="php-keyword">object</span>' +
+                    '<span class="php-paren">(</span>' +
+                    '<span class="php-classname">' + escapeHtml(node.class || '') + '</span>' +
+                    '<span class="php-paren">)</span>' +
+                    '<span class="php-dim"> (</span>' +
+                    '<span class="php-length">' + escapeHtml(String(node.length)) + '</span>' +
+                    '<span class="php-dim">)</span>',
+                    node.value,
+                    pad,
+                    childPad,
+                    depth,
+                    true
+                );
+
+            case 'exception':
+                return renderPhpCollection(
+                    '<span class="php-exception">' + escapeHtml(node.class || 'Exception') + '</span>',
+                    node.value,
+                    pad,
+                    childPad,
+                    depth,
+                    true
+                );
+
+            default:
+                return '<span class="php-unknown">' + escapeHtml(JSON.stringify(node)) + '</span>';
+        }
+    }
+
+    /**
+     * Renders an array or object collection as an indented block.
+     *
+     * Array keys are rendered as [0], [1], ["key"] etc.
+     * Object keys are always rendered as ["propName"]=>.
+     *
+     * @param {string}  header    - Pre-built HTML for the type header line.
+     * @param {Array}   items     - Array of {key, value} descriptor pairs.
+     * @param {string}  pad       - Indentation for the closing brace.
+     * @param {string}  childPad  - Indentation for child entries.
+     * @param {number}  depth     - Current depth (passed to child nodes).
+     * @param {boolean} forceStringKeys - If true, always quote keys (objects).
+     * @returns {string} HTML string.
+     */
+    function renderPhpCollection(header, items, pad, childPad, depth, forceStringKeys) {
+        var html = header + ' <span class="php-brace">{</span>\n';
+
+        items.forEach(function (item) {
+            var key = item.key;
+            var keyHtml;
+
+            if (!forceStringKeys && typeof key === 'number') {
+                keyHtml = (
+                    '<span class="php-bracket">[</span>' +
+                    '<span class="php-number">' + escapeHtml(String(key)) + '</span>' +
+                    '<span class="php-bracket">]</span>'
+                );
+            } else {
+                keyHtml = (
+                    '<span class="php-bracket">[</span>' +
+                    '<span class="php-key">&quot;' + escapeHtml(String(key)) + '&quot;</span>' +
+                    '<span class="php-bracket">]</span>'
+                );
+            }
+
+            html += childPad + keyHtml + '<span class="php-arrow">=&gt;</span>\n';
+            html += childPad + renderPhpNode(item.value, depth + 1) + '\n';
+        });
+
+        html += pad + '<span class="php-brace">}</span>';
+        return html;
+    }
+
+    /**
+     * Returns an indentation string of two spaces per depth level.
+     *
+     * @param {number} depth - The indentation depth.
+     * @returns {string} Spaces.
+     */
+    function phpIndent(depth) {
+        var s = '';
+        for (var i = 0; i < depth; i++) { s += '  '; }
+        return s;
     }
 
     /**
@@ -658,13 +871,11 @@
                 formatTable(entry.data) +
                 '</div>';
         } else {
-            let dataJson = typeof entry.data === 'object'
-                ? JSON.stringify(entry.data, null, 2)
-                : String(entry.data);
+            let dataHtml = formatData(entry.data);
             dataSection =
                 '<div class="detail-section">' +
                 '<div class="detail-label">Data</div>' +
-                '<div class="detail-json">' + syntaxHighlight(escapeHtml(dataJson)) + '</div>' +
+                '<div class="detail-data">' + dataHtml + '</div>' +
                 '</div>';
         }
 

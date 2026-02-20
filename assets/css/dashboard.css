@@ -1083,6 +1083,127 @@ body {
     overflow-y: auto;
 }
 
+/* ─── PHP Dump (var_dump-style renderer) ─────────────────── */
+
+.php-dump {
+    padding: var(--space-sm) 14px;
+    margin-top: var(--space-xs);
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+    max-height: 220px;
+    overflow-y: auto;
+    white-space: pre;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    line-height: 1.9;
+    color: var(--text-secondary);
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+
+.php-dump::-webkit-scrollbar {
+    height: 4px;
+    width: var(--space-xs);
+}
+
+.php-dump::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+}
+
+.detail-data .php-dump {
+    max-height: 400px;
+    font-size: var(--text-base);
+}
+
+/* ── PHP Token Colors ─────────────────────────────────────── */
+
+/* Type keywords: string, int, float, bool, array, object, resource */
+.php-keyword {
+    color: var(--blue);
+}
+
+/* Scalar values and string content */
+.php-string {
+    color: var(--accent);
+}
+
+.php-number {
+    color: var(--orange);
+}
+
+/* Boolean true / false */
+.php-bool {
+    color: var(--purple);
+}
+
+/* null */
+.php-null {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* Class names (object, exception) */
+.php-classname {
+    color: var(--yellow);
+}
+
+/* Exception class names (slightly different — red tint) */
+.php-exception {
+    color: var(--red);
+    font-weight: 600;
+}
+
+/* String length indicator: string(12) — the (12) part */
+.php-length {
+    color: var(--text-muted);
+}
+
+/* Secondary parentheses and dim text */
+.php-paren {
+    color: var(--text-muted);
+}
+
+.php-dim {
+    color: var(--text-muted);
+}
+
+/* Array / object key names */
+.php-key {
+    color: var(--accent);
+}
+
+/* Numeric array keys [0], [1] */
+.php-bracket {
+    color: var(--text-muted);
+}
+
+/* => arrow */
+.php-arrow {
+    color: var(--text-muted);
+    margin: 0 4px;
+}
+
+/* Curly braces { } */
+.php-brace {
+    color: var(--text-muted);
+}
+
+/* Depth limit placeholder */
+.php-truncated {
+    color: var(--red);
+    font-style: italic;
+    opacity: 0.7;
+}
+
+/* Unknown / fallback */
+.php-unknown {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
 /* ─── Scrollbar ──────────────────────────────────────────── */
 ::-webkit-scrollbar {
     width: var(--space-xs);
