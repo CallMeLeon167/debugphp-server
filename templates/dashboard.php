@@ -108,12 +108,6 @@ use DebugPHP\Server\Config;
                 <div class="debug-toolbar-left">
                     <span class="entry-count"><strong id="visibleCount">0</strong> entries</span>
                 </div>
-                <div class="auto-scroll-toggle" id="autoScrollToggle">
-                    <div class="toggle-track on">
-                        <div class="toggle-knob"></div>
-                    </div>
-                    Auto-scroll
-                </div>
             </div>
 
             <div class="debug-log" id="debugLog">

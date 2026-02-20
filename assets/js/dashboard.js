@@ -145,7 +145,6 @@
         debugLog: document.getElementById('debugLog'),
         emptyState: document.getElementById('emptyState'),
         visibleCount: document.getElementById('visibleCount'),
-        autoScrollToggle: document.getElementById('autoScrollToggle'),
         searchInput: document.getElementById('searchInput'),
         pauseBtn: document.getElementById('pauseBtn'),
         autoClearBtn: document.getElementById('autoClearBtn'),
@@ -803,12 +802,6 @@
         clearMetrics();
         lastRequestId = null;
         startNewSession();
-    });
-
-    // Auto-scroll toggle
-    dom.autoScrollToggle.addEventListener('click', function () {
-        autoScroll = !autoScroll;
-        dom.autoScrollToggle.classList.toggle('on', autoScroll);
     });
 
     // Detail panel close
