@@ -176,9 +176,6 @@
     /**
      * Removes a metric chip from the topbar with a fade-out animation.
      *
-     * Called when a metric:remove SSE event is received, which happens when
-     * a metric key is no longer sent during the current PHP request.
-     *
      * @param {string} key - The metric name to remove.
      */
     function removeMetric(key) {
@@ -200,7 +197,6 @@
 
     /**
      * Removes all metric chips from the topbar.
-     * Called when a new session is started.
      */
     function clearMetrics() {
         dom.topbarMetrics.innerHTML = '';
@@ -231,7 +227,9 @@
             origin = entry.origin.file + (entry.origin.line ? ':' + entry.origin.line : '');
         }
 
-        let content = formatData(entry.data);
+        let content = entry.type === 'table'
+            ? formatTable(entry.data)
+            : formatData(entry.data);
 
         el.innerHTML =
             '<div class="entry-color ' + colorClass + '"></div>' +
@@ -299,6 +297,105 @@
     }
 
     /**
+     * Renders a table entry as an HTML table.
+     *
+     * Expects data in the shape { headers: string[]|null, rows: object[] }.
+     * When headers is null, column names are derived from the union of all
+     * row keys.
+     *
+     * @param {Object} data - Table payload with optional headers and rows array.
+     * @returns {string} HTML string for the complete table.
+     */
+    function formatTable(data) {
+        if (!data || typeof data !== 'object' || !Array.isArray(data.rows)) {
+            return '<span style="color:var(--text-muted)">Invalid table data</span>';
+        }
+
+        let rows = data.rows;
+
+        if (rows.length === 0) {
+            return '<span style="color:var(--text-muted)">Empty table</span>';
+        }
+
+        let keySet = [];
+        let keysSeen = new Set();
+        rows.forEach(function (row) {
+            if (row && typeof row === 'object' && !Array.isArray(row)) {
+                Object.keys(row).forEach(function (k) {
+                    if (!keysSeen.has(k)) {
+                        keysSeen.add(k);
+                        keySet.push(k);
+                    }
+                });
+            }
+        });
+
+        let explicitHeaders = Array.isArray(data.headers) ? data.headers : null;
+
+        let displayHeaders = keySet.map(function (key, index) {
+            return (explicitHeaders && explicitHeaders[index] !== undefined)
+                ? String(explicitHeaders[index])
+                : key;
+        });
+
+        let rowCount = rows.length;
+        let badge = '<span class="table-row-count">' + rowCount + ' row' + (rowCount !== 1 ? 's' : '') + '</span>';
+
+        let html = '<div class="debug-table-wrap">';
+        html += badge;
+        html += '<div class="debug-table-scroll"><table class="debug-table">';
+
+        html += '<thead><tr>';
+        html += '<th class="debug-table-th debug-table-th--idx">#</th>';
+        displayHeaders.forEach(function (header) {
+            html += '<th class="debug-table-th">' + escapeHtml(header) + '</th>';
+        });
+        html += '</tr></thead>';
+
+        html += '<tbody>';
+        rows.forEach(function (row, rowIndex) {
+            html += '<tr class="debug-table-row">';
+            html += '<td class="debug-table-td debug-table-td--idx">' + (rowIndex + 1) + '</td>';
+            keySet.forEach(function (key) {
+                let val = (row && typeof row === 'object') ? row[key] : undefined;
+                html += '<td class="debug-table-td">' + formatCell(val) + '</td>';
+            });
+            html += '</tr>';
+        });
+        html += '</tbody>';
+
+        html += '</table></div></div>';
+
+        return html;
+    }
+
+    /**
+     * Formats a single table cell value as an HTML snippet.
+     *
+     * @param {*} val - The raw cell value.
+     * @returns {string} Styled HTML for the cell content.
+     */
+    function formatCell(val) {
+        if (val === null || val === undefined) {
+            return '<span class="cell-null">—</span>';
+        }
+
+        if (typeof val === 'boolean') {
+            return '<span class="cell-bool cell-bool--' + String(val) + '">' + String(val) + '</span>';
+        }
+
+        if (typeof val === 'number') {
+            return '<span class="cell-num">' + String(val) + '</span>';
+        }
+
+        if (typeof val === 'object') {
+            return '<span class="cell-json">' + escapeHtml(JSON.stringify(val)) + '</span>';
+        }
+
+        return '<span class="cell-str">' + escapeHtml(String(val)) + '</span>';
+    }
+
+    /**
      * Applies syntax highlighting to a JSON string.
      *
      * @param {string} json - The JSON string.
@@ -335,7 +432,6 @@
      * @param {HTMLElement} el    - The clicked DOM element.
      */
     function selectEntry(entry, el) {
-        // Deselect previous
         let prev = dom.debugLog.querySelector('.log-entry.selected');
         if (prev) prev.classList.remove('selected');
 
@@ -349,9 +445,23 @@
             origin = entry.origin.file;
         }
 
-        let dataJson = typeof entry.data === 'object'
-            ? JSON.stringify(entry.data, null, 2)
-            : String(entry.data);
+        let dataSection;
+        if (entry.type === 'table') {
+            dataSection =
+                '<div class="detail-section">' +
+                '<div class="detail-label">Table</div>' +
+                formatTable(entry.data) +
+                '</div>';
+        } else {
+            let dataJson = typeof entry.data === 'object'
+                ? JSON.stringify(entry.data, null, 2)
+                : String(entry.data);
+            dataSection =
+                '<div class="detail-section">' +
+                '<div class="detail-label">Data</div>' +
+                '<div class="detail-json">' + syntaxHighlight(escapeHtml(dataJson)) + '</div>' +
+                '</div>';
+        }
 
         dom.detailBody.innerHTML =
             '<div class="detail-section">' +
@@ -363,10 +473,7 @@
             '<div class="detail-meta-item full-width"><div class="dm-label">Path</div><div class="dm-value">' + escapeHtml(entry.origin.path) + '</div></div>' +
             '</div>' +
             '</div>' +
-            '<div class="detail-section">' +
-            '<div class="detail-label">Data</div>' +
-            '<div class="detail-json">' + syntaxHighlight(escapeHtml(dataJson)) + '</div>' +
-            '</div>';
+            dataSection;
     }
 
     // ─── Filters ────────────────────────────────────────────

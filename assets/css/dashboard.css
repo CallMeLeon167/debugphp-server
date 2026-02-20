@@ -716,12 +716,10 @@ body {
     color: var(--accent);
 }
 
-/* No value present — show only the key */
 .metric-chip.label-only .metric-key {
     color: var(--text-secondary);
 }
 
-/* Update highlight: brief flash when a value is updated */
 @keyframes metricPulse {
     0% {
         border-color: var(--accent);
@@ -748,6 +746,152 @@ body {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* ─── Debug Table ────────────────────────────────────────── */
+
+.debug-table-wrap {
+    margin-top: 8px;
+}
+
+.table-row-count {
+    display: inline-block;
+    margin-bottom: 8px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(96, 165, 250, 0.1);
+    border: 1px solid rgba(96, 165, 250, 0.2);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--blue);
+    letter-spacing: 0.5px;
+}
+
+.debug-table-scroll {
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+
+.debug-table-scroll::-webkit-scrollbar {
+    height: 4px;
+}
+
+.debug-table-scroll::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 2px;
+}
+
+.debug-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.debug-table-th {
+    padding: 8px 14px;
+    background: var(--bg-code);
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.debug-table-th--idx,
+.debug-table-td--idx {
+    width: 36px;
+    min-width: 36px;
+    text-align: right;
+    color: var(--text-muted);
+    padding-right: 10px;
+    border-right: 1px solid var(--border);
+}
+
+.debug-table-th+.debug-table-th {
+    border-left: 1px solid rgba(42, 42, 58, 0.6);
+}
+
+.debug-table-row {
+    transition: background 0.1s;
+}
+
+.debug-table-row:nth-child(even) {
+    background: rgba(255, 255, 255, 0.015);
+}
+
+.debug-table-row:hover {
+    background: var(--bg-card-hover);
+}
+
+.debug-table-td {
+    padding: 7px 14px;
+    color: var(--text-secondary);
+    border-bottom: 1px solid rgba(42, 42, 58, 0.5);
+    vertical-align: middle;
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.debug-table-row:last-child .debug-table-td {
+    border-bottom: none;
+}
+
+/* ── Cell value types ─────────────────────────────────────── */
+
+.cell-null {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.cell-bool {
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 3px;
+}
+
+.cell-bool--true {
+    color: var(--green);
+    background: rgba(74, 222, 128, 0.08);
+}
+
+.cell-bool--false {
+    color: var(--red);
+    background: rgba(248, 113, 113, 0.08);
+}
+
+.cell-num {
+    color: var(--orange);
+}
+
+.cell-str {
+    color: var(--accent);
+}
+
+.cell-json {
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+.detail-body .debug-table-wrap {
+    margin-top: 0;
+}
+
+.detail-body .debug-table-scroll {
+    max-height: 360px;
+    overflow-y: auto;
 }
 
 /* ─── Scrollbar ──────────────────────────────────────────── */
