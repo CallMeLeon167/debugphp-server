@@ -1376,7 +1376,9 @@
     // ─── Session Persistence ────────────────────────────────
 
     /**
-     * @param {Object} session
+     * Saves the current session to localStorage.
+     *
+     * @param {Object} session - The session data from the API.
      */
     function saveSession(session) {
         localStorage.setItem('debugphp_session', JSON.stringify({
@@ -1386,7 +1388,11 @@
     }
 
     /**
-     * @returns {Object|null}
+     * Loads a stored session from localStorage.
+     *
+     * Returns null if no session is stored or if it has expired.
+     *
+     * @returns {Object|null} The stored session or null.
      */
     function loadSession() {
         let stored = localStorage.getItem('debugphp_session');
@@ -1409,8 +1415,10 @@
     }
 
     /**
-     * @param {Object}  session
-     * @param {boolean} isNew
+     * Applies a session (new or restored) to the UI and connects the stream.
+     *
+     * @param {Object}  session - The session data.
+     * @param {boolean} isNew   - Whether this is a freshly created session.
      */
     function applySession(session, isNew) {
         sessionId = session.id;
@@ -1429,6 +1437,9 @@
         connectStream(sessionId);
     }
 
+    /**
+     * Creates a brand new session via the API.
+     */
     async function startNewSession() {
         try {
             let session = await createSession();
@@ -1440,6 +1451,12 @@
 
     // ─── Init ───────────────────────────────────────────────
 
+    /**
+     * Initializes the dashboard.
+     *
+     * Tries to restore an existing session from localStorage.
+     * Only creates a new session if none is stored or the stored one has expired.
+     */
     async function init() {
         renderEditorOptions();
         updateEditorState();

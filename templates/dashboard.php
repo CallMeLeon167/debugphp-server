@@ -61,24 +61,27 @@ use DebugPHP\Server\Config;
 
         <!-- Sidebar -->
         <aside class="sidebar">
+
+            <!-- Type Filter (dynamic — only "All" is static, types appear as entries arrive) -->
             <div class="sidebar-header">
-                <div class="sidebar-title">Filters</div>
-                <div class="filter-chips">
+                <div class="sidebar-title">
+                    Type
+                    <span class="filter-reset-btn" id="typeFilterReset" style="display:none;" title="Reset type filter">&#10005;</span>
+                </div>
+                <div class="filter-chips" id="typeFilterChips">
                     <span class="chip active" data-filter="all">All</span>
-                    <span class="chip" data-filter="info"><span class="chip-dot"
-                            style="background:var(--blue)"></span>Info</span>
-                    <span class="chip" data-filter="sql"><span class="chip-dot"
-                            style="background:var(--purple)"></span>SQL</span>
-                    <span class="chip" data-filter="error"><span class="chip-dot"
-                            style="background:var(--red)"></span>Error</span>
-                    <span class="chip" data-filter="timer"><span class="chip-dot"
-                            style="background:var(--yellow)"></span>Timer</span>
-                    <span class="chip" data-filter="success"><span class="chip-dot"
-                            style="background:var(--accent)"></span>Success</span>
-                    <span class="chip" data-filter="cache"><span class="chip-dot"
-                            style="background:var(--orange)"></span>Cache</span>
                 </div>
             </div>
+
+            <!-- Label Filter (dynamic, hidden until labels arrive) -->
+            <div class="sidebar-header sidebar-label-section" id="labelFilterSection" style="display:none;">
+                <div class="sidebar-title">
+                    Label
+                    <span class="filter-reset-btn" id="labelFilterReset" style="display:none;" title="Reset label filter">&#10005;</span>
+                </div>
+                <div class="filter-chips" id="labelFilterChips"></div>
+            </div>
+
             <div class="sidebar-search">
                 <input class="search-input" id="searchInput" type="text" placeholder="Search entries...">
             </div>
