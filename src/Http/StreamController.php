@@ -107,7 +107,8 @@ final class StreamController
 
         $startTime       = time();
         $lastMetricCheck = date('Y-m-d H:i:s');
-        $lastRemoveCheck = date('Y-m-d H:i:s');
+
+        $lastRemoveCheck = date('Y-m-d H:i:s', time() - 1);
 
         while (true) {
             if (connection_aborted() !== 0) {

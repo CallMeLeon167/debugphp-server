@@ -137,9 +137,15 @@ final class Controller
         $origin = $request->get('origin');
         $origin = is_array($origin) ? $origin : [];
 
+        $requestId = $request->getString('request_id');
+
+        if ($requestId !== '') {
+            $this->metrics->softDeleteStale($sessionId, $requestId);
+        }
+
         $entryId = $this->entries->insert(
             sessionId: $sessionId,
-            requestId: $request->getString('request_id'),
+            requestId: $requestId,
             data: $request->get('data') ?? '',
             label: $request->getString('label'),
             color: $request->getString('color', 'gray'),

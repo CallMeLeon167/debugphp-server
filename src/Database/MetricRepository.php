@@ -207,7 +207,7 @@ final class MetricRepository
             FROM metrics
             WHERE session_id = :session_id
               AND removed_at IS NOT NULL
-              AND removed_at > :after
+              AND removed_at >= :after
             ORDER BY removed_at ASC
         ');
 
