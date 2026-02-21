@@ -14,20 +14,29 @@
     let paused = false;
     let autoScroll = true;
     let activeFilter = 'all';
+    let activeLabelFilter = 'all';
     let searchQuery = '';
     let selectedEntryId = null;
     let stats = { total: 0, errors: 0, sql: 0 };
     let lastRequestId = null;
     let autoClear = localStorage.getItem('debugphp_autoclear') === 'true';
+    let typeCounts = new Map();
+    let labelCounts = new Map();
+
+    const TYPE_COLORS = {
+        info: 'var(--blue)',
+        sql: 'var(--purple)',
+        error: 'var(--red)',
+        timer: 'var(--yellow)',
+        success: 'var(--accent)',
+        cache: 'var(--orange)',
+        table: 'var(--blue)',
+    };
 
     // ─── Editor Picker ──────────────────────────────────────
 
     /**
      * Supported editors with their deep-link URL schemes.
-     *
-     * Placeholders:
-     *   {fullpath} — absolute path including filename
-     *   {line}     — line number
      *
      * @type {Array<{id: string, label: string, scheme: string|null}>}
      */
@@ -40,7 +49,6 @@
         { id: 'sublime', label: 'Sublime Text', scheme: 'subl://open?url=file://{fullpath}&line={line}' },
     ];
 
-    /** Currently selected editor ID, persisted in localStorage (user-specific). */
     let activeEditor = localStorage.getItem('debugphp_editor') || 'none';
 
     /**
@@ -155,9 +163,14 @@
         statSql: document.getElementById('statSql'),
         sessionTimer: document.getElementById('sessionTimer'),
         topbarMetrics: document.getElementById('topbarMetrics'),
+        typeFilterChips: document.getElementById('typeFilterChips'),
+        typeFilterReset: document.getElementById('typeFilterReset'),
+        labelFilterSection: document.getElementById('labelFilterSection'),
+        labelFilterChips: document.getElementById('labelFilterChips'),
+        labelFilterReset: document.getElementById('labelFilterReset'),
     };
 
-    // ─── Color Mapping ──────────────────────────────────────
+    // ─── Color / Label class mapping ─────────────────────────
     const colorMap = {
         red: 'c-red',
         blue: 'c-blue',
@@ -217,9 +230,7 @@
                 body: JSON.stringify({ session: currentSessionId }),
             });
 
-            if (!response.ok) {
-                return false;
-            }
+            if (!response.ok) return false;
 
             const result = await response.json();
             return result.deleted === true;
@@ -241,9 +252,7 @@
 
     /**
      * Clears all entries from the DOM only, without calling the server.
-     *
-     * Used internally by the auto-clear logic — the server-side clear is
-     * triggered separately via clearSession() to keep them decoupled.
+     * Resets both type and label filter state.
      */
     function clearDomEntries() {
         dom.debugLog.innerHTML = '';
@@ -251,6 +260,8 @@
         dom.detailPanel.classList.add('hidden');
         stats = { total: 0, errors: 0, sql: 0 };
         updateStats();
+        resetTypeFilters();
+        resetLabelFilters();
     }
 
     /**
@@ -273,12 +284,240 @@
         lastRequestId = requestId;
     }
 
+    // ─── Type Filter ─────────────────────────────────────────
+
+    /**
+     * Registers a new entry type in the type filter sidebar.
+     * Creates a chip if it doesn't exist yet, otherwise increments the count.
+     *
+     * @param {string} type - The entry type (e.g. "info", "sql", "error").
+     */
+    function registerType(type) {
+        if (!type) return;
+
+        const current = typeCounts.get(type) || 0;
+        typeCounts.set(type, current + 1);
+
+        const attrKey = type.replace(/[^a-zA-Z0-9_-]/g, '_');
+        let chip = dom.typeFilterChips.querySelector('[data-type-key="' + attrKey + '"]');
+
+        if (chip) {
+            const countEl = chip.querySelector('.chip-count');
+            if (countEl) countEl.textContent = String(typeCounts.get(type));
+            return;
+        }
+
+        chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.dataset.typeKey = attrKey;
+        chip.dataset.typeValue = type;
+        chip.dataset.filter = type;
+
+        const dotColor = TYPE_COLORS[type] || 'var(--text-muted)';
+
+        chip.innerHTML =
+            '<span class="chip-dot" style="background:' + dotColor + '"></span>' +
+            escapeHtml(type.charAt(0).toUpperCase() + type.slice(1)) +
+            '<span class="chip-count">' + String(typeCounts.get(type)) + '</span>';
+
+        chip.addEventListener('click', function () {
+            setTypeFilter(type);
+        });
+
+        dom.typeFilterChips.appendChild(chip);
+    }
+
+    /**
+     * Decrements the count for a type after an entry is deleted.
+     * Removes the chip and resets the active filter if the count reaches zero.
+     *
+     * @param {string} type - The type of the deleted entry.
+     */
+    function unregisterType(type) {
+        if (!type) return;
+
+        const current = typeCounts.get(type) || 0;
+        const next = current - 1;
+
+        if (next <= 0) {
+            typeCounts.delete(type);
+
+            const attrKey = type.replace(/[^a-zA-Z0-9_-]/g, '_');
+            const chip = dom.typeFilterChips.querySelector('[data-type-key="' + attrKey + '"]');
+            if (chip) chip.remove();
+
+            if (activeFilter === type) {
+                activeFilter = 'all';
+                dom.typeFilterChips.querySelector('[data-filter="all"]').classList.add('active');
+                dom.typeFilterReset.style.display = 'none';
+            }
+        } else {
+            typeCounts.set(type, next);
+
+            const attrKey = type.replace(/[^a-zA-Z0-9_-]/g, '_');
+            const chip = dom.typeFilterChips.querySelector('[data-type-key="' + attrKey + '"]');
+            if (chip) {
+                const countEl = chip.querySelector('.chip-count');
+                if (countEl) countEl.textContent = String(next);
+            }
+        }
+    }
+
+    /**
+     * Activates a type filter chip. Clicking the active chip resets to 'all'.
+     *
+     * @param {string} type
+     */
+    function setTypeFilter(type) {
+        if (activeFilter === type) {
+            activeFilter = 'all';
+        } else {
+            activeFilter = type;
+        }
+
+        dom.typeFilterChips.querySelectorAll('.chip').forEach(function (chip) {
+            chip.classList.toggle(
+                'active',
+                chip.dataset.filter === activeFilter || (activeFilter === 'all' && chip.dataset.filter === 'all')
+            );
+        });
+
+        dom.typeFilterReset.style.display = activeFilter !== 'all' ? '' : 'none';
+
+        applyFilters();
+    }
+
+    /**
+     * Resets all type filter state and removes all dynamic type chips.
+     * Called on clearDomEntries() and startNewSession().
+     */
+    function resetTypeFilters() {
+        activeFilter = 'all';
+        typeCounts.clear();
+
+        dom.typeFilterChips.querySelectorAll('[data-type-key]').forEach(function (chip) {
+            chip.remove();
+        });
+
+        const allChip = dom.typeFilterChips.querySelector('[data-filter="all"]');
+        if (allChip) allChip.classList.add('active');
+
+        dom.typeFilterReset.style.display = 'none';
+    }
+
+    // ─── Label Filter ────────────────────────────────────────
+
+    /**
+     * Registers a new entry label in the label filter sidebar.
+     *
+     * @param {string} label
+     */
+    function registerLabel(label) {
+        if (!label) return;
+
+        const current = labelCounts.get(label) || 0;
+        labelCounts.set(label, current + 1);
+
+        const attrKey = label.replace(/[^a-zA-Z0-9_-]/g, '_');
+        let chip = dom.labelFilterChips.querySelector('[data-label-key="' + attrKey + '"]');
+
+        if (chip) {
+            const countEl = chip.querySelector('.chip-count');
+            if (countEl) countEl.textContent = String(labelCounts.get(label));
+            return;
+        }
+
+        chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.dataset.labelKey = attrKey;
+        chip.dataset.labelValue = label;
+        chip.innerHTML =
+            escapeHtml(label) +
+            '<span class="chip-count">' + String(labelCounts.get(label)) + '</span>';
+
+        chip.addEventListener('click', function () {
+            setLabelFilter(label);
+        });
+
+        dom.labelFilterChips.appendChild(chip);
+        dom.labelFilterSection.style.display = '';
+    }
+
+    /**
+     * Decrements the count for a label after an entry is deleted.
+     * Removes the chip and hides the section if the count reaches zero.
+     *
+     * @param {string} label
+     */
+    function unregisterLabel(label) {
+        if (!label) return;
+
+        const current = labelCounts.get(label) || 0;
+        const next = current - 1;
+
+        if (next <= 0) {
+            labelCounts.delete(label);
+
+            const attrKey = label.replace(/[^a-zA-Z0-9_-]/g, '_');
+            const chip = dom.labelFilterChips.querySelector('[data-label-key="' + attrKey + '"]');
+            if (chip) chip.remove();
+
+            if (activeLabelFilter === label) {
+                activeLabelFilter = 'all';
+                dom.labelFilterReset.style.display = 'none';
+            }
+
+            if (labelCounts.size === 0) {
+                dom.labelFilterSection.style.display = 'none';
+            }
+        } else {
+            labelCounts.set(label, next);
+
+            const attrKey = label.replace(/[^a-zA-Z0-9_-]/g, '_');
+            const chip = dom.labelFilterChips.querySelector('[data-label-key="' + attrKey + '"]');
+            if (chip) {
+                const countEl = chip.querySelector('.chip-count');
+                if (countEl) countEl.textContent = String(next);
+            }
+        }
+    }
+
+    /**
+     * Activates a label filter chip. Clicking the active chip resets to 'all'.
+     *
+     * @param {string} label
+     */
+    function setLabelFilter(label) {
+        if (activeLabelFilter === label) {
+            activeLabelFilter = 'all';
+        } else {
+            activeLabelFilter = label;
+        }
+
+        dom.labelFilterChips.querySelectorAll('.chip').forEach(function (chip) {
+            chip.classList.toggle('active', chip.dataset.labelValue === activeLabelFilter);
+        });
+
+        dom.labelFilterReset.style.display = activeLabelFilter !== 'all' ? '' : 'none';
+
+        applyFilters();
+    }
+
+    /**
+     * Resets all label filter state and removes all label chips.
+     */
+    function resetLabelFilters() {
+        activeLabelFilter = 'all';
+        labelCounts.clear();
+        dom.labelFilterChips.innerHTML = '';
+        dom.labelFilterSection.style.display = 'none';
+        dom.labelFilterReset.style.display = 'none';
+    }
+
     // ─── SSE Connection ─────────────────────────────────────
 
     /**
-     * Connects to the SSE stream for the given session.
-     *
-     * @param {string} id - The session ID.
+     * @param {string} id
      */
     function connectStream(id) {
         if (eventSource) {
@@ -295,9 +534,7 @@
             if (paused) return;
 
             let data = JSON.parse(e.data);
-
             handleRequestIdChange(data.request_id || '');
-
             addEntry(data);
         });
 
@@ -342,9 +579,7 @@
 
             if (value !== null && value !== undefined) {
                 let valEl = existing.querySelector('.metric-value');
-                if (valEl) {
-                    valEl.textContent = value;
-                }
+                if (valEl) valEl.textContent = value;
                 existing.classList.remove('label-only');
             }
 
@@ -383,9 +618,7 @@
         chip.style.transform = 'translateY(-4px)';
 
         setTimeout(function () {
-            if (chip.parentNode) {
-                chip.parentNode.removeChild(chip);
-            }
+            if (chip.parentNode) chip.parentNode.removeChild(chip);
         }, 300);
     }
 
@@ -409,6 +642,7 @@
         let el = document.createElement('div');
         el.className = 'log-entry';
         el.dataset.type = entry.type || 'info';
+        el.dataset.label = entry.label || '';
         el.dataset.id = String(entry.id);
 
         let colorClass = colorMap[entry.color] || 'c-gray';
@@ -454,22 +688,16 @@
 
         dom.debugLog.appendChild(el);
 
-        // Apply active filters
-        if (activeFilter !== 'all' && entry.type !== activeFilter) {
-            el.style.display = 'none';
-        }
+        registerType(entry.type || 'info');
+        if (entry.label) registerLabel(entry.label);
 
-        if (searchQuery && !el.textContent.toLowerCase().includes(searchQuery)) {
-            el.style.display = 'none';
-        }
+        el.style.display = isEntryVisible(el) ? '' : 'none';
 
-        // Update stats
         stats.total++;
         if (entry.type === 'error') stats.errors++;
         if (entry.type === 'sql') stats.sql++;
         updateStats();
 
-        // Auto-scroll
         if (autoScroll) {
             dom.debugLog.scrollTop = dom.debugLog.scrollHeight;
         }
@@ -609,11 +837,7 @@
                     '<span class="php-paren">(</span>' +
                     '<span class="php-length">' + escapeHtml(String(node.length)) + '</span>' +
                     '<span class="php-paren">)</span>',
-                    node.value,
-                    pad,
-                    childPad,
-                    depth,
-                    false
+                    node.value, pad, childPad, depth, false
                 );
 
             case 'object':
@@ -638,21 +862,13 @@
                     '<span class="php-dim"> (</span>' +
                     '<span class="php-length">' + escapeHtml(String(node.length)) + '</span>' +
                     '<span class="php-dim">)</span>',
-                    node.value,
-                    pad,
-                    childPad,
-                    depth,
-                    true
+                    node.value, pad, childPad, depth, true
                 );
 
             case 'exception':
                 return renderPhpCollection(
                     '<span class="php-exception">' + escapeHtml(node.class || 'Exception') + '</span>',
-                    node.value,
-                    pad,
-                    childPad,
-                    depth,
-                    true
+                    node.value, pad, childPad, depth, true
                 );
 
             default:
@@ -750,7 +966,6 @@
         });
 
         let explicitHeaders = Array.isArray(data.headers) ? data.headers : null;
-
         let displayHeaders = keySet.map(function (key, index) {
             return (explicitHeaders && explicitHeaders[index] !== undefined)
                 ? String(explicitHeaders[index])
@@ -763,15 +978,13 @@
         let html = '<div class="debug-table-wrap">';
         html += badge;
         html += '<div class="debug-table-scroll"><table class="debug-table">';
-
         html += '<thead><tr>';
         html += '<th class="debug-table-th debug-table-th--idx">#</th>';
         displayHeaders.forEach(function (header) {
             html += '<th class="debug-table-th">' + escapeHtml(header) + '</th>';
         });
-        html += '</tr></thead>';
+        html += '</tr></thead><tbody>';
 
-        html += '<tbody>';
         rows.forEach(function (row, rowIndex) {
             html += '<tr class="debug-table-row">';
             html += '<td class="debug-table-td debug-table-td--idx">' + (rowIndex + 1) + '</td>';
@@ -781,10 +994,8 @@
             });
             html += '</tr>';
         });
-        html += '</tbody>';
 
-        html += '</table></div></div>';
-
+        html += '</tbody></table></div></div>';
         return html;
     }
 
@@ -871,11 +1082,10 @@
                 formatTable(entry.data) +
                 '</div>';
         } else {
-            let dataHtml = formatData(entry.data);
             dataSection =
                 '<div class="detail-section">' +
                 '<div class="detail-label">Data</div>' +
-                '<div class="detail-data">' + dataHtml + '</div>' +
+                '<div class="detail-data">' + formatData(entry.data) + '</div>' +
                 '</div>';
         }
 
@@ -909,18 +1119,49 @@
     // ─── Filters ────────────────────────────────────────────
 
     /**
-     * Applies the active filter and search query to all entries.
+     * Determines whether a single log-entry element should be visible.
+     *
+     * OR logic between type and label:
+     *   - Both 'all'        → visible
+     *   - Only type set     → must match type
+     *   - Only label set    → must match label
+     *   - Both set          → must match type OR label
+     * Search is always AND-combined on top.
+     *
+     * @param {HTMLElement} el
+     * @returns {boolean}
+     */
+    function isEntryVisible(el) {
+        const typeSelected = activeFilter !== 'all';
+        const labelSelected = activeLabelFilter !== 'all';
+
+        let matchesFilter;
+
+        if (!typeSelected && !labelSelected) {
+            matchesFilter = true;
+        } else if (typeSelected && !labelSelected) {
+            matchesFilter = el.dataset.type === activeFilter;
+        } else if (!typeSelected && labelSelected) {
+            matchesFilter = el.dataset.label === activeLabelFilter;
+        } else {
+            matchesFilter = el.dataset.type === activeFilter || el.dataset.label === activeLabelFilter;
+        }
+
+        const matchesSearch = !searchQuery || el.textContent.toLowerCase().includes(searchQuery);
+
+        return matchesFilter && matchesSearch;
+    }
+
+    /**
+     * Applies the active filters to all entries and updates the visible count.
      */
     function applyFilters() {
         let entries = dom.debugLog.querySelectorAll('.log-entry');
         let visible = 0;
 
         entries.forEach(function (entry) {
-            let matchesFilter = activeFilter === 'all' || entry.dataset.type === activeFilter;
-            let matchesSearch = !searchQuery || entry.textContent.toLowerCase().includes(searchQuery);
-            let show = matchesFilter && matchesSearch;
-
-            entry.style.display = show ? 'flex' : 'none';
+            let show = isEntryVisible(entry);
+            entry.style.display = show ? '' : 'none';
             if (show) visible++;
         });
 
@@ -968,16 +1209,24 @@
 
     // ─── Event Listeners ────────────────────────────────────
 
-    // Filter chips
-    document.querySelectorAll('.chip').forEach(function (chip) {
-        chip.addEventListener('click', function () {
-            document.querySelectorAll('.chip').forEach(function (c) {
-                c.classList.remove('active');
-            });
-            chip.classList.add('active');
-            activeFilter = chip.dataset.filter;
-            applyFilters();
+    // Type filter reset button
+    dom.typeFilterReset.addEventListener('click', function () {
+        activeFilter = 'all';
+        dom.typeFilterChips.querySelectorAll('.chip').forEach(function (c) {
+            c.classList.toggle('active', c.dataset.filter === 'all');
         });
+        dom.typeFilterReset.style.display = 'none';
+        applyFilters();
+    });
+
+    // Label filter reset button
+    dom.labelFilterReset.addEventListener('click', function () {
+        activeLabelFilter = 'all';
+        dom.labelFilterChips.querySelectorAll('.chip').forEach(function (c) {
+            c.classList.remove('active');
+        });
+        dom.labelFilterReset.style.display = 'none';
+        applyFilters();
     });
 
     // Search
@@ -1041,10 +1290,15 @@
         deleteEntry(entryId, sessionId).then(function (success) {
             if (success) {
                 let type = logEntry.dataset.type || 'info';
+                let label = logEntry.dataset.label || '';
+
                 stats.total = Math.max(0, stats.total - 1);
                 if (type === 'error') stats.errors = Math.max(0, stats.errors - 1);
                 if (type === 'sql') stats.sql = Math.max(0, stats.sql - 1);
                 updateStats();
+
+                unregisterType(type);
+                if (label) unregisterLabel(label);
 
                 if (logEntry.classList.contains('selected')) {
                     dom.detailPanel.classList.add('hidden');
@@ -1053,8 +1307,7 @@
                 setTimeout(function () {
                     logEntry.remove();
 
-                    let remaining = dom.debugLog.querySelectorAll('.log-entry');
-                    if (remaining.length === 0) {
+                    if (dom.debugLog.querySelectorAll('.log-entry').length === 0) {
                         dom.emptyState.style.display = 'flex';
                     }
                 }, 300);
@@ -1075,9 +1328,7 @@
 
     document.addEventListener('click', function (e) {
         let picker = document.getElementById('editorPicker');
-        if (picker && !picker.contains(e.target)) {
-            closeEditorDropdown();
-        }
+        if (picker && !picker.contains(e.target)) closeEditorDropdown();
     });
 
     dom.debugLog.addEventListener('click', function (e) {
@@ -1087,21 +1338,13 @@
         if (!originEl) return;
 
         e.stopPropagation();
-
-        let file = originEl.dataset.file || '';
-        let path = originEl.dataset.path || '';
-        let line = parseInt(originEl.dataset.line || '0', 10);
-        openInEditor(path, file, line);
+        openInEditor(originEl.dataset.path || '', originEl.dataset.file || '', parseInt(originEl.dataset.line || '0', 10));
     });
 
     dom.detailBody.addEventListener('click', function (e) {
         let btn = e.target.closest('.detail-open-btn');
         if (!btn) return;
-
-        let file = btn.dataset.file || '';
-        let path = btn.dataset.path || '';
-        let line = parseInt(btn.dataset.line || '0', 10);
-        openInEditor(path, file, line);
+        openInEditor(btn.dataset.path || '', btn.dataset.file || '', parseInt(btn.dataset.line || '0', 10));
     });
 
     // ─── Session Timer ──────────────────────────────────────
@@ -1133,9 +1376,7 @@
     // ─── Session Persistence ────────────────────────────────
 
     /**
-     * Saves the current session to localStorage.
-     *
-     * @param {Object} session - The session data from the API.
+     * @param {Object} session
      */
     function saveSession(session) {
         localStorage.setItem('debugphp_session', JSON.stringify({
@@ -1145,15 +1386,10 @@
     }
 
     /**
-     * Loads a stored session from localStorage.
-     *
-     * Returns null if no session is stored or if it has expired.
-     *
-     * @returns {Object|null} The stored session or null.
+     * @returns {Object|null}
      */
     function loadSession() {
         let stored = localStorage.getItem('debugphp_session');
-
         if (!stored) return null;
 
         try {
@@ -1173,10 +1409,8 @@
     }
 
     /**
-     * Applies a session (new or restored) to the UI and connects the stream.
-     *
-     * @param {Object}  session - The session data.
-     * @param {boolean} isNew   - Whether this is a freshly created session.
+     * @param {Object}  session
+     * @param {boolean} isNew
      */
     function applySession(session, isNew) {
         sessionId = session.id;
@@ -1195,9 +1429,6 @@
         connectStream(sessionId);
     }
 
-    /**
-     * Creates a brand new session via the API.
-     */
     async function startNewSession() {
         try {
             let session = await createSession();
@@ -1209,12 +1440,6 @@
 
     // ─── Init ───────────────────────────────────────────────
 
-    /**
-     * Initializes the dashboard.
-     *
-     * Tries to restore an existing session from localStorage.
-     * Only creates a new session if none is stored or the stored one has expired.
-     */
     async function init() {
         renderEditorOptions();
         updateEditorState();
