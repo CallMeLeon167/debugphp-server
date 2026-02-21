@@ -388,28 +388,6 @@ body {
 }
 
 /* ─── Label Filter Reset Button ──────────────────────────── */
-.filter-reset-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: none;
-    border: 1px solid var(--text-muted);
-    color: var(--text-muted);
-    cursor: pointer;
-    font-size: 9px;
-    line-height: 1;
-    transition: all var(--transition-fast);
-    flex-shrink: 0;
-}
-
-.filter-reset-btn:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-}
-
 .filter-chips {
     display: flex;
     flex-wrap: wrap;

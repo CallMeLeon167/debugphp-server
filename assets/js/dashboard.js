@@ -164,10 +164,8 @@
         sessionTimer: document.getElementById('sessionTimer'),
         topbarMetrics: document.getElementById('topbarMetrics'),
         typeFilterChips: document.getElementById('typeFilterChips'),
-        typeFilterReset: document.getElementById('typeFilterReset'),
         labelFilterSection: document.getElementById('labelFilterSection'),
         labelFilterChips: document.getElementById('labelFilterChips'),
-        labelFilterReset: document.getElementById('labelFilterReset'),
     };
 
     // ─── Color / Label class mapping ─────────────────────────
@@ -349,7 +347,6 @@
             if (activeFilter === type) {
                 activeFilter = 'all';
                 dom.typeFilterChips.querySelector('[data-filter="all"]').classList.add('active');
-                dom.typeFilterReset.style.display = 'none';
             }
         } else {
             typeCounts.set(type, next);
@@ -382,8 +379,6 @@
             );
         });
 
-        dom.typeFilterReset.style.display = activeFilter !== 'all' ? '' : 'none';
-
         applyFilters();
     }
 
@@ -401,8 +396,6 @@
 
         const allChip = dom.typeFilterChips.querySelector('[data-filter="all"]');
         if (allChip) allChip.classList.add('active');
-
-        dom.typeFilterReset.style.display = 'none';
     }
 
     // ─── Label Filter ────────────────────────────────────────
@@ -464,7 +457,6 @@
 
             if (activeLabelFilter === label) {
                 activeLabelFilter = 'all';
-                dom.labelFilterReset.style.display = 'none';
             }
 
             if (labelCounts.size === 0) {
@@ -498,8 +490,6 @@
             chip.classList.toggle('active', chip.dataset.labelValue === activeLabelFilter);
         });
 
-        dom.labelFilterReset.style.display = activeLabelFilter !== 'all' ? '' : 'none';
-
         applyFilters();
     }
 
@@ -511,7 +501,6 @@
         labelCounts.clear();
         dom.labelFilterChips.innerHTML = '';
         dom.labelFilterSection.style.display = 'none';
-        dom.labelFilterReset.style.display = 'none';
     }
 
     // ─── SSE Connection ─────────────────────────────────────
@@ -1208,26 +1197,6 @@
     }
 
     // ─── Event Listeners ────────────────────────────────────
-
-    // Type filter reset button
-    dom.typeFilterReset.addEventListener('click', function () {
-        activeFilter = 'all';
-        dom.typeFilterChips.querySelectorAll('.chip').forEach(function (c) {
-            c.classList.toggle('active', c.dataset.filter === 'all');
-        });
-        dom.typeFilterReset.style.display = 'none';
-        applyFilters();
-    });
-
-    // Label filter reset button
-    dom.labelFilterReset.addEventListener('click', function () {
-        activeLabelFilter = 'all';
-        dom.labelFilterChips.querySelectorAll('.chip').forEach(function (c) {
-            c.classList.remove('active');
-        });
-        dom.labelFilterReset.style.display = 'none';
-        applyFilters();
-    });
 
     // Search
     dom.searchInput.addEventListener('input', function (e) {

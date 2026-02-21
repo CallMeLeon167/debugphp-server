@@ -66,7 +66,6 @@ use DebugPHP\Server\Config;
             <div class="sidebar-header">
                 <div class="sidebar-title">
                     Type
-                    <span class="filter-reset-btn" id="typeFilterReset" style="display:none;" title="Reset type filter">&#10005;</span>
                 </div>
                 <div class="filter-chips" id="typeFilterChips">
                     <span class="chip active" data-filter="all">All</span>
@@ -77,7 +76,6 @@ use DebugPHP\Server\Config;
             <div class="sidebar-header sidebar-label-section" id="labelFilterSection" style="display:none;">
                 <div class="sidebar-title">
                     Label
-                    <span class="filter-reset-btn" id="labelFilterReset" style="display:none;" title="Reset label filter">&#10005;</span>
                 </div>
                 <div class="filter-chips" id="labelFilterChips"></div>
             </div>
