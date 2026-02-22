@@ -107,7 +107,6 @@ final class StreamController
 
         $startTime       = time();
         $lastMetricCheck = date('Y-m-d H:i:s');
-
         $lastRemoveCheck = date('Y-m-d H:i:s', time() - 1);
 
         while (true) {
@@ -136,17 +135,24 @@ final class StreamController
                 /** @var mixed */
                 $decodedData = json_decode($entry['data'], true);
 
+                /** @var array{label: string, color: string, type: string, origin: array{file: string, path: string, line: int}}|null */
+                $meta = json_decode($entry['meta'], true);
+
+                $originData = is_array($meta) && isset($meta['origin']) && is_array($meta['origin'])
+                    ? $meta['origin']
+                    : [];
+
                 $this->sendEvent('entry', [
                     'id'         => $entry['id'],
                     'request_id' => $entry['request_id'],
                     'data'       => $decodedData,
-                    'label'      => $entry['label'],
-                    'color'      => $entry['color'],
-                    'type'       => $entry['type'],
+                    'label'      => is_array($meta) ? (string) ($meta['label'] ?? '') : '',
+                    'color'      => is_array($meta) ? (string) ($meta['color'] ?? 'gray') : 'gray',
+                    'type'       => is_array($meta) ? (string) ($meta['type'] ?? 'info') : 'info',
                     'origin'     => [
-                        'file' => $entry['origin_file'],
-                        'path' => $entry['origin_path'],
-                        'line' => $entry['origin_line'],
+                        'file' => isset($originData['file']) ? (string) $originData['file'] : '',
+                        'path' => isset($originData['path']) ? (string) $originData['path'] : '',
+                        'line' => isset($originData['line']) ? (int) $originData['line'] : 0,
                     ],
                     'timestamp'  => $entry['timestamp'],
                 ], (int) $entry['id']);

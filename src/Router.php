@@ -128,6 +128,7 @@ final class Router
      */
     private function add(string $method, string $path, callable $callback): void
     {
+        /** @var list<string> $params */
         $params = [];
 
         $pattern = preg_replace_callback(

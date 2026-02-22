@@ -43,16 +43,16 @@ final class EntryRepository
     /**
      * Inserts a new debug entry.
      *
-     * @param string  $sessionId  The session this entry belongs to.
-     * @param string  $requestId  The request lifecycle ID from Debug::init().
-     * @param mixed   $data       The debug data (any PHP value, JSON-encoded for storage).
-     * @param string  $label      Display label (e.g. "SQL", "Error").
-     * @param string  $color      Display color (e.g. "blue", "red").
-     * @param string  $type       Entry type (e.g. "info", "sql", "error").
-     * @param string  $originFile Source file from which Debug::send() was called.
-     * @param string  $originPath Source path from which Debug::send() was called.
-     * @param int     $originLine Line number in the source file.
-     * @param float   $timestamp  Microtime timestamp from the client.
+     * @param string $sessionId  The session this entry belongs to.
+     * @param string $requestId  The request lifecycle ID from Debug::init().
+     * @param mixed  $data       The debug data (any PHP value, JSON-encoded for storage).
+     * @param array{
+     *     label:  string,
+     *     color:  string,
+     *     type:   string,
+     *     origin: array{file: string, path: string, line: int}
+     * }            $meta        Entry metadata.
+     * @param float  $timestamp  Microtime timestamp from the client.
      *
      * @return int The ID of the newly created entry.
      */
@@ -60,32 +60,22 @@ final class EntryRepository
         string $sessionId,
         string $requestId,
         mixed $data,
-        string $label,
-        string $color,
-        string $type,
-        string $originFile,
-        string $originPath,
-        int $originLine,
+        array $meta,
         float $timestamp,
     ): int {
         $stmt = $this->pdo->prepare(
             'INSERT INTO entries
-                (session_id, request_id, data, label, color, type, origin_file, origin_path, origin_line, timestamp, created_at)
+                (session_id, request_id, data, meta, timestamp, created_at)
              VALUES
-                (:session_id, :request_id, :data, :label, :color, :type, :origin_file, :origin_path, :origin_line, :timestamp, NOW())'
+                (:session_id, :request_id, :data, :meta, :timestamp, NOW())'
         );
 
         $stmt->execute([
-            'session_id'  => $sessionId,
-            'request_id'  => $requestId,
-            'data'        => json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
-            'label'       => $label,
-            'color'       => $color,
-            'type'        => $type,
-            'origin_file' => $originFile,
-            'origin_path' => $originPath,
-            'origin_line' => $originLine,
-            'timestamp'   => $timestamp,
+            'session_id' => $sessionId,
+            'request_id' => $requestId,
+            'data'       => json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
+            'meta'       => json_encode($meta, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
+            'timestamp'  => $timestamp,
         ]);
 
         return (int) $this->pdo->lastInsertId();
@@ -100,12 +90,12 @@ final class EntryRepository
      * @param string $sessionId The session to query.
      * @param int    $afterId   Only return entries with an ID greater than this value.
      *
-     * @return list<array{id: int, session_id: string, request_id: string, data: string, label: string, color: string, type: string, origin_file: string, origin_path: string, origin_line: int, timestamp: float, created_at: string}>
+     * @return list<array{id: int, session_id: string, request_id: string, data: string, meta: string, timestamp: float, created_at: string}>
      */
     public function findNewerThan(string $sessionId, int $afterId): array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT id, session_id, request_id, data, label, color, type, origin_file, origin_path, origin_line, timestamp, created_at
+            'SELECT id, session_id, request_id, data, meta, timestamp, created_at
              FROM entries
              WHERE session_id = :session_id AND id > :after_id
              ORDER BY id ASC'
@@ -115,7 +105,7 @@ final class EntryRepository
             'after_id'   => $afterId,
         ]);
 
-        /** @var list<array{id: int, session_id: string, request_id: string, data: string, label: string, color: string, type: string, origin_file: string, origin_path: string, origin_line: int, timestamp: float, created_at: string}> */
+        /** @var list<array{id: int, session_id: string, request_id: string, data: string, meta: string, timestamp: float, created_at: string}> */
         return $stmt->fetchAll();
     }
 

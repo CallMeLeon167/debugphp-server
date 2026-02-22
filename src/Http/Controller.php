@@ -109,8 +109,8 @@ final class Controller
      *   request_id (string) Request lifecycle ID from Debug::init()
      *   data       (mixed)  The debug data
      *   label      (string) Optional display label
-     *   color      (string) Optional color
-     *   type       (string) Optional type
+     *   color      (string) Optional color (default: gray)
+     *   type       (string) Optional type  (default: info)
      *   origin     (object) Optional {file, path, line}
      *   timestamp  (float)  Optional, defaults to microtime(true)
      *
@@ -143,16 +143,22 @@ final class Controller
             $this->metrics->softDeleteStale($sessionId, $requestId);
         }
 
+        $meta = [
+            'label' => $request->getString('label'),
+            'color' => $request->getString('color', 'gray'),
+            'type'  => $request->getString('type', 'info'),
+            'origin' => [
+                'file' => isset($origin['file']) && is_string($origin['file']) ? $origin['file'] : '',
+                'path' => isset($origin['path']) && is_string($origin['path']) ? $origin['path'] : '',
+                'line' => isset($origin['line']) ? (int) $origin['line'] : 0,
+            ],
+        ];
+
         $entryId = $this->entries->insert(
             sessionId: $sessionId,
             requestId: $requestId,
             data: $request->get('data') ?? '',
-            label: $request->getString('label'),
-            color: $request->getString('color', 'gray'),
-            type: $request->getString('type', 'info'),
-            originFile: isset($origin['file']) && is_string($origin['file']) ? $origin['file'] : '',
-            originPath: isset($origin['path']) && is_string($origin['path']) ? $origin['path'] : '',
-            originLine: isset($origin['line']) ? (int) $origin['line'] : 0,
+            meta: $meta,
             timestamp: $request->has('timestamp') ? (float) $request->get('timestamp') : microtime(true),
         );
 
