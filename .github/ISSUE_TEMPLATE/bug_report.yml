@@ -1,0 +1,81 @@
+name: 🐞 Bug Report
+description: Something isn't working as expected.
+title: "[Bug] "
+labels: [ "bug", "needs triage" ]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill out the sections below as completely as possible — it helps a lot when trying to reproduce the issue.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug. What did you expect to happen, and what actually happened?
+      placeholder: "e.g. When I send a debug entry with Debug::send(), the dashboard shows no data even though the API returns 201."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: How can we reliably reproduce this issue?
+      placeholder: |
+        1. Start the server with `php -S localhost:8080`
+        2. Send a debug entry via ...
+        3. Open the dashboard at ...
+        4. See the error
+    validations:
+      required: true
+
+  - type: input
+    id: php_version
+    attributes:
+      label: PHP version
+      placeholder: "e.g. 8.2.12"
+    validations:
+      required: true
+
+  - type: input
+    id: server_version
+    attributes:
+      label: DebugPHP Server version / commit
+      placeholder: "e.g. v1.0.0 or git commit abc1234"
+    validations:
+      required: true
+
+  - type: input
+    id: db_version
+    attributes:
+      label: Database version
+      placeholder: "e.g. MySQL 8.0.33 / MariaDB 10.11.4"
+    validations:
+      required: false
+
+  - type: input
+    id: webserver
+    attributes:
+      label: Web server / runtime
+      placeholder: "e.g. php -S built-in, nginx + php-fpm, DDEV"
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or error output
+      description: PHP error logs, browser console output, network request/response — anything that might help.
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Screenshots, unusual server configuration, anything else worth mentioning.
+    validations:
+      required: false
