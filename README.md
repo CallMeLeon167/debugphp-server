@@ -1,11 +1,16 @@
-# DebugPHP Server
+<div align="center">
+
+<img src="https://raw.githubusercontent.com/CallMeLeon167/debugphp-art/refs/heads/main/DebugPHP_logo_server.png" alt="DebugPHP Server" width="400">
 
 **Self-hosted real-time debugging dashboard for PHP.**
 
-This is the server and dashboard component of [DebugPHP](https://github.com/CallMeLeon167/debugphp). It receives debug data from your PHP application and displays it in a browser-based dashboard in real-time via Server-Sent Events (SSE).
+This is the server and dashboard component of [DebugPHP](https://github.com/CallMeLeon167/debugphp).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-00e89d.svg)](LICENSE)
 [![PHP Version](https://img.shields.io/badge/PHP-^8.1-777BB4.svg)](https://php.net)
+[![PHPStan](https://img.shields.io/badge/PHPStan-Level%2010-brightgreen.svg)](https://phpstan.org)
+
+</div>
 
 ---
 
@@ -13,134 +18,102 @@ This is the server and dashboard component of [DebugPHP](https://github.com/Call
 
 - PHP 8.1+
 - MySQL 5.7+ or MariaDB 10.3+
-- Apache with `mod_rewrite` enabled
-- `ext-pdo` and `ext-pdo_mysql`
 - Composer
+
+---
 
 ## Installation
 
 ```bash
-# 1. Clone the repository
 git clone https://github.com/CallMeLeon167/debugphp-server.git
 cd debugphp-server
-
-# 2. Install dependencies
 composer install
-
-# 3. Create the database
-mysql -u root -p -e "CREATE DATABASE debugphp CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-
-# 4. Open the setup wizard in your browser
-# http://your-domain.com/setup/
 ```
 
-The **Setup Wizard** guides you through the entire configuration:
+Then open `http://localhost:8080/setup/` in your browser and follow the setup wizard.
 
-1. **Enter your database credentials** — host, port, database name, username, password
-2. **Test the connection** — verifies the credentials before saving
-3. **Save .env** — the wizard creates the `.env` file for you
-4. **Create tables** — sets up the `sessions` and `entries` tables automatically
+The wizard will:
+1. Test your database connection
+2. Write the `.env` file
+3. Create the required tables
 
-After setup, the dashboard is available at `/`.
-
-If you revisit `/setup/` later, it will show you that DebugPHP is already configured and ready. If you need to reconfigure the server (e.g. changed database credentials), open `setup/index.php` and set the flag at the top of the file:
-
-```php
-const ALLOW_SETUP = true;
-```
-
-This unlocks the setup wizard again. After reconfiguring, set it back to `false`.
+---
 
 ## Configuration
 
-All configuration is managed via the `.env` file (created by the setup wizard):
-
-```env
-# Database Connection
-DB_HOST=localhost
-DB_PORT=3306
-DB_DATABASE=debugphp
-DB_USERNAME=root
-DB_PASSWORD=secret
-
-# Session lifetime (hours)
-SESSION_LIFETIME_HOURS=24
-```
+All configuration lives in `.env` after setup. The available options are:
 
 | Variable | Default | Description |
 |---|---|---|
-| `DB_HOST` | `localhost` | MySQL/MariaDB host |
+| `SITE_URL` | `http://localhost` | Base URL of the server |
+| `APP_NAME` | `DebugPHP` | Application name |
+| `DB_HOST` | `localhost` | Database host |
 | `DB_PORT` | `3306` | Database port |
 | `DB_DATABASE` | `debugphp` | Database name |
-| `DB_USERNAME` | `root` | Database username |
-| `DB_PASSWORD` | *(empty)* | Database password |
+| `DB_USERNAME` | `root` | Database user |
+| `DB_PASSWORD` | — | Database password |
 | `SESSION_LIFETIME_HOURS` | `24` | How long a debug session stays active |
 
-## Connecting Your App
+---
 
-Install the [DebugPHP Composer package](https://github.com/CallMeLeon167/debugphp) in your PHP project:
+## Connecting your PHP app
+
+Install the client package in your PHP application:
 
 ```bash
 composer require callmeleon167/debugphp --dev
 ```
 
-Point it to your self-hosted server:
+Then initialize it with your session token from the dashboard:
 
 ```php
 use DebugPHP\Debug;
 
 Debug::init('your-session-token', [
-    'host' => 'http://your-server.com',
+    'host' => 'http://localhost:8080',
 ]);
 
-Debug::send('Hello from my app!');
+Debug::send('Hello DebugPHP!');
+Debug::send($user, 'User')->color('blue');
 ```
 
-The session token is displayed in the dashboard when you click **"+ New Session"**.
+See the [DebugPHP client repository](https://github.com/CallMeLeon167/debugphp) for the full API documentation.
 
-## API Endpoints
+---
+
+## API
+
+The server exposes a REST API consumed by the client package and the dashboard.
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/` | Dashboard |
-| `POST` | `/api/session` | Create a new session |
+| `POST` | `/api/session` | Create a new debug session |
 | `DELETE` | `/api/session/{id}` | Delete a session |
-| `POST` | `/api/debug` | Send a debug entry |
+| `GET` | `/api/stream/{id}` | SSE stream for a session |
+| `POST` | `/api/debug` | Store a debug entry |
+| `DELETE` | `/api/entry/{id}` | Delete a single entry |
 | `POST` | `/api/clear` | Clear all entries for a session |
-| `GET` | `/api/stream/{id}` | SSE stream for live updates |
+| `POST` | `/api/metric` | Store or update a toolbar metric |
 
-## Apache Configuration
+---
 
-The included `.htaccess` handles everything automatically:
+## Re-running the setup
 
-- URL rewriting to `index.php`
-- Output buffering disabled for SSE streams
-- CORS headers for cross-origin requests
-- Security headers (no directory listing, no access to sensitive files)
+If you need to reconfigure the server after initial setup, set `ALLOW_SETUP` to `true` in `setup/index.php`, run the wizard, then set it back to `false`.
 
-Make sure `mod_rewrite` is enabled:
+---
 
-```bash
-sudo a2enmod rewrite
-sudo systemctl restart apache2
-```
+## Contributing
 
-## How It Works
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 
-```
-┌──────────────┐     POST /api/debug     ┌──────────────┐     SSE Stream     ┌──────────────┐
-│   Your App   │ ──────────────────────→ │   DebugPHP   │ ────────────────→  │  Dashboard   │
-│  Debug::send │                         │    Server    │                    │   (Browser)  │
-└──────────────┘                         └──────────────┘                    └──────────────┘
-```
-
-1. Your PHP app sends debug data via HTTP POST to `/api/debug`.
-2. The server stores the entry in MySQL.
-3. The dashboard connects via SSE (`/api/stream/{id}`) and receives new entries in real-time.
+---
 
 ## License
 
 MIT — see [LICENSE](LICENSE) for details.
+
+---
 
 ## Links
 
