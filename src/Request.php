@@ -49,9 +49,12 @@ final class Request
      */
     public static function fromGlobals(): self
     {
-        $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+        $methodRaw = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+        $method = strtoupper(is_string($methodRaw) ? $methodRaw : 'GET');
 
-        $rawPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+        $rawUri  = $_SERVER['REQUEST_URI'] ?? '/';
+        $uri = is_string($rawUri) ? $rawUri : '/';
+        $rawPath = parse_url($uri, PHP_URL_PATH);
         $path    = is_string($rawPath) ? $rawPath : '/';
 
         if ($path !== '/' && str_ends_with($path, '/')) {

@@ -88,9 +88,8 @@ final class StreamController
         $this->disableBuffering();
 
         // On browser reconnect: read last known entry ID from the request header
-        $lastId = isset($_SERVER['HTTP_LAST_EVENT_ID'])
-            ? (int) $_SERVER['HTTP_LAST_EVENT_ID']
-            : 0;
+        $lastIdHeader = $_SERVER['HTTP_LAST_EVENT_ID'] ?? null;
+        $lastId = is_numeric($lastIdHeader) ? (int) $lastIdHeader : 0;
 
         $this->sendEvent('connected', [
             'session'      => $sessionId,
@@ -132,27 +131,28 @@ final class StreamController
             $newEntries = $this->entries->findNewerThan($sessionId, $lastId);
 
             foreach ($newEntries as $entry) {
-                /** @var mixed */
+                /** @var mixed $decodedData */
                 $decodedData = json_decode($entry['data'], true);
 
-                /** @var array{label: string, color: string, type: string, origin: array{file: string, path: string, line: int}}|null */
+                /** @var array{label: string, color: string, type: string, origin: array{file: string, path: string, line: int}}|null $meta */
                 $meta = json_decode($entry['meta'], true);
 
-                $originData = is_array($meta) && isset($meta['origin']) && is_array($meta['origin'])
-                    ? $meta['origin']
-                    : [];
+                $label  = $meta !== null ? $meta['label']  : '';
+                $color  = $meta !== null ? $meta['color']  : 'gray';
+                $type   = $meta !== null ? $meta['type']   : 'info';
+                $origin = $meta !== null ? $meta['origin'] : ['file' => '', 'path' => '', 'line' => 0];
 
                 $this->sendEvent('entry', [
                     'id'         => $entry['id'],
                     'request_id' => $entry['request_id'],
                     'data'       => $decodedData,
-                    'label'      => is_array($meta) ? (string) ($meta['label'] ?? '') : '',
-                    'color'      => is_array($meta) ? (string) ($meta['color'] ?? 'gray') : 'gray',
-                    'type'       => is_array($meta) ? (string) ($meta['type'] ?? 'info') : 'info',
+                    'label'      => $label,
+                    'color'      => $color,
+                    'type'       => $type,
                     'origin'     => [
-                        'file' => isset($originData['file']) ? (string) $originData['file'] : '',
-                        'path' => isset($originData['path']) ? (string) $originData['path'] : '',
-                        'line' => isset($originData['line']) ? (int) $originData['line'] : 0,
+                        'file' => $origin['file'],
+                        'path' => $origin['path'],
+                        'line' => $origin['line'],
                     ],
                     'timestamp'  => $entry['timestamp'],
                 ], (int) $entry['id']);
@@ -186,7 +186,6 @@ final class StreamController
                     ]);
                 }
 
-                // Clean up the soft-deleted rows now that we have notified the client
                 $this->metrics->hardDeleteRemoved($sessionId);
             }
 

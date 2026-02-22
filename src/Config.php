@@ -35,15 +35,21 @@ final class Config
 
     private function __construct()
     {
-        $this->siteUrl              = rtrim((string) ($_ENV['SITE_URL'] ?? 'http://localhost'), '/');
-        $this->appName              = (string) ($_ENV['APP_NAME'] ?? 'DebugPHP');
-        $this->sessionLifetimeHours = (int)   ($_ENV['SESSION_LIFETIME_HOURS'] ?? 24);
+        $siteUrl = isset($_ENV['SITE_URL']) && is_string($_ENV['SITE_URL']) ? $_ENV['SITE_URL'] : 'http://localhost';
+        $appName = isset($_ENV['APP_NAME']) && is_string($_ENV['APP_NAME']) ? $_ENV['APP_NAME'] : 'DebugPHP';
+        $sessionLifetime = isset($_ENV['SESSION_LIFETIME_HOURS']) && is_numeric($_ENV['SESSION_LIFETIME_HOURS'])
+            ? (int) $_ENV['SESSION_LIFETIME_HOURS']
+            : 24;
+
+        $this->siteUrl = rtrim($siteUrl, '/');
+        $this->appName = $appName;
+        $this->sessionLifetimeHours = $sessionLifetime;
     }
 
     /**
      * Initializes the config. Must be called once before any getter is used.
      * Called automatically by Application::__construct().
-     * 
+     *
      * @return void
      */
     public static function init(): void
@@ -53,7 +59,7 @@ final class Config
 
     /**
      * Returns the base URL of the application (no trailing slash).
-     * 
+     *
      * @return string
      */
     public static function siteUrl(): string
@@ -63,7 +69,7 @@ final class Config
 
     /**
      * Returns the application name.
-     * 
+     *
      * @return string
      */
     public static function appName(): string
@@ -73,7 +79,7 @@ final class Config
 
     /**
      * Returns the session lifetime in hours.
-     * 
+     *
      * @return int
      */
     public static function sessionLifetimeHours(): int
@@ -83,7 +89,7 @@ final class Config
 
     /**
      * Returns the singleton instance. Throws if init() was not called.
-     * 
+     *
      * @return self
      */
     private static function instance(): self

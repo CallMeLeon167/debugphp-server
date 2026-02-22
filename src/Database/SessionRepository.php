@@ -58,7 +58,9 @@ final class SessionRepository
         $this->deleteExpired();
 
         $id            = bin2hex(random_bytes(16));
-        $lifetimeHours = (int) ($_ENV['SESSION_LIFETIME_HOURS'] ?? 24);
+        $lifetimeHours = isset($_ENV['SESSION_LIFETIME_HOURS']) && is_numeric($_ENV['SESSION_LIFETIME_HOURS'])
+            ? (int) $_ENV['SESSION_LIFETIME_HOURS']
+            : 24;
         $createdAt     = date('Y-m-d H:i:s');
         $expiresAt     = date('Y-m-d H:i:s', time() + ($lifetimeHours * 3600));
 

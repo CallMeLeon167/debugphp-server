@@ -53,7 +53,14 @@ $loadedEnv = [];
 
 if ($setup->envExists()) {
     $dotenv    = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
-    $loadedEnv = $dotenv->load();
+    /** @var array<string, string|null> $rawEnv */
+    $rawEnv = $dotenv->load();
+
+    foreach ($rawEnv as $key => $value) {
+        if (is_string($value)) {
+            $loadedEnv[$key] = $value;
+        }
+    }
 }
 
 Config::init();
@@ -61,7 +68,8 @@ Config::init();
 $isConfigured = $setup->isConfigured($loadedEnv);
 
 // ─── Block if already configured ─────────────────────────
-if ($isConfigured && !ALLOW_SETUP) {
+// @phpstan-ignore identical.alwaysTrue
+if ($isConfigured && ALLOW_SETUP === false) {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode([
@@ -87,6 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    /** @var array<string, mixed> $body */
     $result = match ($body['action']) {
         'test'     => $setup->testConnection($body),
         'save_env' => $setup->saveEnv($body),

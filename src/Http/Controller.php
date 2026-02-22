@@ -113,7 +113,7 @@ final class Controller
      *   type       (string) Optional type  (default: info)
      *   origin     (object) Optional {file, path, line}
      *   timestamp  (float)  Optional, defaults to microtime(true)
-     *
+     * 
      * Response: 201 with the ID of the new entry.
      */
     public function storeEntry(): void
@@ -133,9 +133,10 @@ final class Controller
             return;
         }
 
-        /** @var array{file?: string, path?: string, line?: int}|null */
-        $origin = $request->get('origin');
-        $origin = is_array($origin) ? $origin : [];
+        $rawOrigin = $request->get('origin');
+
+        /** @var array<string, mixed> $origin */
+        $origin = is_array($rawOrigin) ? $rawOrigin : [];
 
         $requestId = $request->getString('request_id');
 
@@ -148,18 +149,21 @@ final class Controller
             'color' => $request->getString('color', 'gray'),
             'type'  => $request->getString('type', 'info'),
             'origin' => [
-                'file' => isset($origin['file']) && is_string($origin['file']) ? $origin['file'] : '',
-                'path' => isset($origin['path']) && is_string($origin['path']) ? $origin['path'] : '',
-                'line' => isset($origin['line']) ? (int) $origin['line'] : 0,
+                'file' => is_string($origin['file'] ?? null) ? $origin['file'] : '',
+                'path' => is_string($origin['path'] ?? null) ? $origin['path'] : '',
+                'line' => is_int($origin['line'] ?? null) ? $origin['line'] : 0,
             ],
         ];
+
+        $rawTimestamp = $request->get('timestamp');
+        $timestamp = is_numeric($rawTimestamp) ? (float) $rawTimestamp : microtime(true);
 
         $entryId = $this->entries->insert(
             sessionId: $sessionId,
             requestId: $requestId,
             data: $request->get('data') ?? '',
             meta: $meta,
-            timestamp: $request->has('timestamp') ? (float) $request->get('timestamp') : microtime(true),
+            timestamp: $request->has('timestamp') ? $timestamp : microtime(true),
         );
 
         $this->json(['id' => $entryId], 201);
@@ -290,7 +294,9 @@ final class Controller
         }
 
         $rawValue = $request->get('value');
-        $value    = ($rawValue !== null) ? (string) $rawValue : null;
+        $value    = is_string($rawValue) || is_null($rawValue)
+            ? $rawValue
+            : (is_scalar($rawValue) ? (string) $rawValue : '');
 
         $this->metrics->upsert($sessionId, $key, $value, $requestId);
         $this->metrics->softDeleteStale($sessionId, $requestId);

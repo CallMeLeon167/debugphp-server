@@ -45,11 +45,11 @@ final class Connection
      */
     public function __construct()
     {
-        $host     = (string) ($_ENV['DB_HOST']     ?? 'localhost');
-        $port     = (string) ($_ENV['DB_PORT']     ?? '3306');
-        $database = (string) ($_ENV['DB_DATABASE'] ?? 'debugphp');
-        $username = (string) ($_ENV['DB_USERNAME'] ?? 'root');
-        $password = (string) ($_ENV['DB_PASSWORD'] ?? '');
+        $host     = isset($_ENV['DB_HOST']) && is_string($_ENV['DB_HOST']) ? $_ENV['DB_HOST'] : 'localhost';
+        $port     = isset($_ENV['DB_PORT']) && is_string($_ENV['DB_PORT']) ? $_ENV['DB_PORT'] : '3306';
+        $database = isset($_ENV['DB_DATABASE']) && is_string($_ENV['DB_DATABASE']) ? $_ENV['DB_DATABASE'] : 'debugphp';
+        $username = isset($_ENV['DB_USERNAME']) && is_string($_ENV['DB_USERNAME']) ? $_ENV['DB_USERNAME'] : 'root';
+        $password = isset($_ENV['DB_PASSWORD']) && is_string($_ENV['DB_PASSWORD']) ? $_ENV['DB_PASSWORD'] : '';
 
         $dsn = "mysql:host={$host};port={$port};dbname={$database};charset=utf8mb4";
 
