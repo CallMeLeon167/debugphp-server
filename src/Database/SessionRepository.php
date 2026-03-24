@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace DebugPHP\Server\Database;
 
+use DebugPHP\Server\Config;
 use PDO;
 
 /**
@@ -47,7 +48,7 @@ final class SessionRepository
      * Creates a new debug session.
      *
      * Generates a random 32-character hex ID and sets the expiry time
-     * based on the SESSION_LIFETIME_HOURS environment variable.
+     * based on the configured session lifetime.
      *
      * Also cleans up expired sessions before inserting (housekeeping).
      *
@@ -57,12 +58,9 @@ final class SessionRepository
     {
         $this->deleteExpired();
 
-        $id            = bin2hex(random_bytes(16));
-        $lifetimeHours = isset($_ENV['SESSION_LIFETIME_HOURS']) && is_numeric($_ENV['SESSION_LIFETIME_HOURS'])
-            ? (int) $_ENV['SESSION_LIFETIME_HOURS']
-            : 24;
-        $createdAt     = date('Y-m-d H:i:s');
-        $expiresAt     = date('Y-m-d H:i:s', time() + ($lifetimeHours * 3600));
+        $id        = bin2hex(random_bytes(16));
+        $createdAt = date('Y-m-d H:i:s');
+        $expiresAt = date('Y-m-d H:i:s', time() + (Config::sessionLifetimeHours() * 3600));
 
         $stmt = $this->pdo->prepare(
             'INSERT INTO sessions (id, created_at, expires_at) VALUES (:id, :created_at, :expires_at)'
