@@ -851,6 +851,108 @@ body {
     color: var(--text-secondary);
 }
 
+/* ─── Detail Copy Button ─────────────────────────────────── */
+
+.detail-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-xs);
+}
+
+.detail-label-row .detail-label {
+    margin-bottom: 0;
+}
+
+.detail-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px var(--space-sm);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+    font-family: var(--font-mono);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.detail-copy-btn:hover {
+    border-color: var(--accent-mid);
+    color: var(--accent);
+    background: var(--accent-dim);
+}
+
+.detail-copy-btn svg {
+    flex-shrink: 0;
+}
+
+.detail-copy-label {
+    line-height: 1;
+}
+
+/* ─── Clickable Access Paths ─────────────────────────────── */
+
+.php-access-path {
+    cursor: pointer;
+    border-radius: 3px;
+    padding: 0 1px;
+    transition: background var(--transition-fast), outline-color var(--transition-fast);
+    outline: 1px solid transparent;
+    outline-offset: 1px;
+    position: relative;
+}
+
+.php-access-path:hover {
+    background: var(--accent-dim);
+    outline-color: var(--accent-mid);
+}
+
+.php-access-path:hover .php-bracket,
+.php-access-path:hover .php-key,
+.php-access-path:hover .php-number {
+    color: var(--accent);
+}
+
+/* "Copied!" flash feedback */
+.php-access-path.copied {
+    background: var(--accent-dim);
+    outline-color: var(--accent);
+}
+
+.php-access-path.copied::after {
+    content: 'Copied!';
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 2px var(--space-xs);
+    border-radius: var(--radius-sm);
+    background: var(--accent);
+    color: var(--bg-primary);
+    font-size: 9px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    white-space: nowrap;
+    pointer-events: none;
+    animation: copiedFadeIn var(--transition-fast) ease;
+    z-index: 10;
+}
+
+@keyframes copiedFadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(2px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
 /* ─── Empty State ────────────────────────────────────────── */
 .empty-state {
     flex: 1;

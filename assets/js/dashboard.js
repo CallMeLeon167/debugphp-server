@@ -707,7 +707,7 @@
     function formatData(data) {
         // Typed PHP descriptor: { type: 'string'|'int'|'array'|'object'|... }
         if (data !== null && typeof data === 'object' && typeof data.type === 'string') {
-            return '<div class="php-dump">' + renderPhpNode(data, 0) + '</div>';
+            return '<div class="php-dump">' + renderPhpNode(data, 0, '') + '</div>';
         }
 
         if (data === null || data === undefined) {
@@ -730,33 +730,211 @@
         return escapeHtml(String(data));
     }
 
+    // ─── Copy Helpers ────────────────────────────────────────
+
     /**
-     * Recursively renders a typed PHP descriptor node as PHP var_dump-style HTML.
+     * Extracts the raw plain-text from a php-dump node exactly as displayed,
+     * without any HTML tags. Used by the Copy button in the detail panel.
      *
-     * Expected node shapes (produced by Entry::buildTyped()):
-     *   { type: 'null' }
-     *   { type: 'bool',      value: boolean }
-     *   { type: 'int',       value: number }
-     *   { type: 'float',     value: number }
-     *   { type: 'string',    length: number, value: string }
-     *   { type: 'resource',  value: string }
-     *   { type: 'array',     length: number, value: [{key, value},...] }
-     *   { type: 'object',    class: string, length: number, value: [{key, value},...] }
-     *   { type: 'exception', class: string, value: [{key, value},...] }
-     *   { type: 'unknown',   value: string }
-     *   { type: 'truncated' }
-     *
-     * @param {Object} node   - The typed descriptor node.
-     * @param {number} depth  - Current indentation depth.
-     * @returns {string} HTML string for this node.
+     * @param {*}      data - The entry data (typed descriptor or raw value).
+     * @param {string} type - The entry type (e.g. "table", "info").
+     * @returns {string} The plain-text for the clipboard.
      */
-    function renderPhpNode(node, depth) {
+    function extractCopyText(data, type) {
+        if (type === 'table' && data && typeof data === 'object' && Array.isArray(data.rows)) {
+            return extractTableTsv(data);
+        }
+
+        if (data !== null && typeof data === 'object' && typeof data.type === 'string') {
+            return renderPhpNodeText(data, 0);
+        }
+
+        if (data === null || data === undefined) {
+            return 'null';
+        }
+
+        if (typeof data === 'string') {
+            return '"' + data + '"';
+        }
+
+        if (typeof data === 'object') {
+            return JSON.stringify(data, null, 2);
+        }
+
+        return String(data);
+    }
+
+    /**
+     * Recursively renders a typed PHP descriptor as plain text (var_dump-style).
+     * Mirrors renderPhpNode() but produces plain text instead of HTML.
+     *
+     * @param {Object} node  - The typed descriptor node.
+     * @param {number} depth - Current indentation depth.
+     * @returns {string} Plain-text var_dump representation.
+     */
+    function renderPhpNodeText(node, depth) {
+        if (!node || typeof node.type === 'undefined') {
+            return JSON.stringify(node);
+        }
+
+        var pad = phpIndent(depth);
+        var childPad = phpIndent(depth + 1);
+
+        switch (node.type) {
+            case 'null':
+                return 'null';
+            case 'bool':
+                return 'bool(' + (node.value ? 'true' : 'false') + ')';
+            case 'int':
+                return 'int(' + String(node.value) + ')';
+            case 'float':
+                return 'float(' + String(node.value) + ')';
+            case 'string':
+                return 'string(' + String(node.length) + ') "' + String(node.value) + '"';
+            case 'resource':
+                return 'resource(' + String(node.value) + ')';
+            case 'truncated':
+                return '*DEPTH LIMIT REACHED*';
+            case 'unknown':
+                return String(node.value || '');
+
+            case 'array':
+                if (node.length === 0) return 'array(0) {}';
+                return renderPhpCollectionText('array(' + String(node.length) + ')', node.value, pad, childPad, depth, false);
+
+            case 'object':
+                if (!node.value || node.value.length === 0) return 'object(' + (node.class || '') + ')(0) {}';
+                return renderPhpCollectionText('object(' + (node.class || '') + ') (' + String(node.length) + ')', node.value, pad, childPad, depth, true);
+
+            case 'exception':
+                return renderPhpCollectionText(node.class || 'Exception', node.value, pad, childPad, depth, true);
+
+            default:
+                return JSON.stringify(node);
+        }
+    }
+
+    /**
+     * Renders an array/object collection as indented plain text.
+     *
+     * @param {string}  header         - Header line (e.g. "array(3)").
+     * @param {Array}   items          - Array of {key, value} pairs.
+     * @param {string}  pad            - Indentation for closing brace.
+     * @param {string}  childPad       - Indentation for child entries.
+     * @param {number}  depth          - Current depth.
+     * @param {boolean} forceStringKeys - Whether to quote all keys.
+     * @returns {string} Plain-text block.
+     */
+    function renderPhpCollectionText(header, items, pad, childPad, depth, forceStringKeys) {
+        var text = header + ' {\n';
+
+        items.forEach(function (item) {
+            var key = item.key;
+            var keyStr;
+
+            if (!forceStringKeys && typeof key === 'number') {
+                keyStr = '[' + String(key) + ']';
+            } else {
+                keyStr = '["' + String(key) + '"]';
+            }
+
+            text += childPad + keyStr + '=>\n';
+            text += childPad + renderPhpNodeText(item.value, depth + 1) + '\n';
+        });
+
+        text += pad + '}';
+        return text;
+    }
+
+    /**
+     * Converts table data to a tab-separated values (TSV) string.
+     *
+     * @param {Object} data - Table payload with optional headers and rows array.
+     * @returns {string} TSV-formatted string.
+     */
+    function extractTableTsv(data) {
+        var rows = data.rows;
+        var keySet = [];
+        var keysSeen = new Set();
+
+        rows.forEach(function (row) {
+            if (row && typeof row === 'object' && !Array.isArray(row)) {
+                Object.keys(row).forEach(function (k) {
+                    if (!keysSeen.has(k)) {
+                        keysSeen.add(k);
+                        keySet.push(k);
+                    }
+                });
+            }
+        });
+
+        var explicitHeaders = Array.isArray(data.headers) ? data.headers : null;
+        var displayHeaders = keySet.map(function (key, index) {
+            return (explicitHeaders && explicitHeaders[index] !== undefined)
+                ? String(explicitHeaders[index])
+                : key;
+        });
+
+        var lines = [displayHeaders.join('\t')];
+
+        rows.forEach(function (row) {
+            var cells = keySet.map(function (key) {
+                var val = (row && typeof row === 'object') ? row[key] : '';
+                if (val === null || val === undefined) return '';
+                if (typeof val === 'object') return JSON.stringify(val);
+                return String(val);
+            });
+            lines.push(cells.join('\t'));
+        });
+
+        return lines.join('\n');
+    }
+
+    /**
+     * Builds a PHP-style access path segment for a given key.
+     *
+     * Numeric keys → [0], string keys → ['key'].
+     *
+     * @param {string|number} key - The array/object key.
+     * @param {boolean} forceStringKeys - True if inside an object (always quote).
+     * @returns {string} The bracket-notation segment.
+     */
+    function buildPathSegment(key, forceStringKeys) {
+        if (!forceStringKeys && typeof key === 'number') {
+            return '[' + String(key) + ']';
+        }
+        return "['" + String(key) + "']";
+    }
+
+    /**
+ * Recursively renders a typed PHP descriptor node as PHP var_dump-style HTML.
+ *
+ * Expected node shapes (produced by Entry::buildTyped()):
+ *   { type: 'null' }
+ *   { type: 'bool',      value: boolean }
+ *   { type: 'int',       value: number }
+ *   { type: 'float',     value: number }
+ *   { type: 'string',    length: number, value: string }
+ *   { type: 'resource',  value: string }
+ *   { type: 'array',     length: number, value: [{key, value},...] }
+ *   { type: 'object',    class: string, length: number, value: [{key, value},...] }
+ *   { type: 'exception', class: string, value: [{key, value},...] }
+ *   { type: 'unknown',   value: string }
+ *   { type: 'truncated' }
+ *
+ * @param {Object} node       - The typed descriptor node.
+ * @param {number} depth      - Current indentation depth.
+ * @param {string} parentPath - The accumulated PHP access path (e.g. "['data']").
+ * @returns {string} HTML string for this node.
+ */
+    function renderPhpNode(node, depth, parentPath) {
         if (!node || typeof node.type === 'undefined') {
             return '<span class="php-unknown">' + escapeHtml(JSON.stringify(node)) + '</span>';
         }
 
         var pad = phpIndent(depth);
         var childPad = phpIndent(depth + 1);
+        var path = parentPath || '';
 
         switch (node.type) {
 
@@ -826,7 +1004,7 @@
                     '<span class="php-paren">(</span>' +
                     '<span class="php-length">' + escapeHtml(String(node.length)) + '</span>' +
                     '<span class="php-paren">)</span>',
-                    node.value, pad, childPad, depth, false
+                    node.value, pad, childPad, depth, false, path
                 );
 
             case 'object':
@@ -851,13 +1029,13 @@
                     '<span class="php-dim"> (</span>' +
                     '<span class="php-length">' + escapeHtml(String(node.length)) + '</span>' +
                     '<span class="php-dim">)</span>',
-                    node.value, pad, childPad, depth, true
+                    node.value, pad, childPad, depth, true, path
                 );
 
             case 'exception':
                 return renderPhpCollection(
                     '<span class="php-exception">' + escapeHtml(node.class || 'Exception') + '</span>',
-                    node.value, pad, childPad, depth, true
+                    node.value, pad, childPad, depth, true, path
                 );
 
             default:
@@ -866,42 +1044,50 @@
     }
 
     /**
-     * Renders an array or object collection as an indented block.
-     *
-     * Array keys are rendered as [0], [1], ["key"] etc.
-     * Object keys are always rendered as ["propName"]=>.
-     *
-     * @param {string}  header    - Pre-built HTML for the type header line.
-     * @param {Array}   items     - Array of {key, value} descriptor pairs.
-     * @param {string}  pad       - Indentation for the closing brace.
-     * @param {string}  childPad  - Indentation for child entries.
-     * @param {number}  depth     - Current depth (passed to child nodes).
-     * @param {boolean} forceStringKeys - If true, always quote keys (objects).
-     * @returns {string} HTML string.
-     */
-    function renderPhpCollection(header, items, pad, childPad, depth, forceStringKeys) {
+  * Renders an array or object collection as an indented block.
+  *
+  * Each key is wrapped in a clickable span that shows the full PHP access
+  * path as a tooltip and copies it to the clipboard on click.
+  *
+  * @param {string}  header         - Pre-built HTML for the type header line.
+  * @param {Array}   items          - Array of {key, value} descriptor pairs.
+  * @param {string}  pad            - Indentation for the closing brace.
+  * @param {string}  childPad       - Indentation for child entries.
+  * @param {number}  depth          - Current depth (passed to child nodes).
+  * @param {boolean} forceStringKeys - If true, always quote keys (objects).
+  * @param {string}  parentPath     - The accumulated PHP access path up to this level.
+  * @returns {string} HTML string.
+  */
+    function renderPhpCollection(header, items, pad, childPad, depth, forceStringKeys, parentPath) {
         var html = header + ' <span class="php-brace">{</span>\n';
+        var basePath = parentPath || '';
 
         items.forEach(function (item) {
             var key = item.key;
+            var segment = buildPathSegment(key, forceStringKeys);
+            var fullPath = basePath + segment;
             var keyHtml;
 
             if (!forceStringKeys && typeof key === 'number') {
                 keyHtml = (
+                    '<span class="php-access-path" data-path="' + escapeHtml(fullPath) + '" title="' + escapeHtml(fullPath) + '">' +
                     '<span class="php-bracket">[</span>' +
                     '<span class="php-number">' + escapeHtml(String(key)) + '</span>' +
-                    '<span class="php-bracket">]</span>'
+                    '<span class="php-bracket">]</span>' +
+                    '</span>'
                 );
             } else {
                 keyHtml = (
+                    '<span class="php-access-path" data-path="' + escapeHtml(fullPath) + '" title="' + escapeHtml(fullPath) + '">' +
                     '<span class="php-bracket">[</span>' +
                     '<span class="php-key">&quot;' + escapeHtml(String(key)) + '&quot;</span>' +
-                    '<span class="php-bracket">]</span>'
+                    '<span class="php-bracket">]</span>' +
+                    '</span>'
                 );
             }
 
             html += childPad + keyHtml + '<span class="php-arrow">=&gt;</span>\n';
-            html += childPad + renderPhpNode(item.value, depth + 1) + '\n';
+            html += childPad + renderPhpNode(item.value, depth + 1, fullPath) + '\n';
         });
 
         html += pad + '<span class="php-brace">}</span>';
@@ -1045,11 +1231,11 @@
     // ─── Detail Panel ───────────────────────────────────────
 
     /**
-     * Shows entry details in the side panel.
-     *
-     * @param {Object}      entry - The entry data.
-     * @param {HTMLElement} el    - The clicked DOM element.
-     */
+ * Shows entry details in the side panel.
+ *
+ * @param {Object}      entry - The entry data.
+ * @param {HTMLElement} el    - The clicked DOM element.
+ */
     function selectEntry(entry, el) {
         let prev = dom.debugLog.querySelector('.log-entry.selected');
         if (prev) prev.classList.remove('selected');
@@ -1063,20 +1249,25 @@
         let originPath = (entry.origin && entry.origin.path) ? entry.origin.path : 'unknown';
         let originLine = entry.origin ? entry.origin.line : 0;
 
-        let dataSection;
-        if (entry.type === 'table') {
-            dataSection =
-                '<div class="detail-section">' +
-                '<div class="detail-label">Table</div>' +
-                formatTable(entry.data) +
-                '</div>';
-        } else {
-            dataSection =
-                '<div class="detail-section">' +
-                '<div class="detail-label">Data</div>' +
-                '<div class="detail-data">' + formatData(entry.data) + '</div>' +
-                '</div>';
-        }
+        let dataLabel = entry.type === 'table' ? 'Table' : 'Data';
+        let dataContent = entry.type === 'table'
+            ? formatTable(entry.data)
+            : '<div class="detail-data">' + formatData(entry.data) + '</div>';
+
+        let dataSection =
+            '<div class="detail-section">' +
+            '<div class="detail-label-row">' +
+            '<div class="detail-label">' + escapeHtml(dataLabel) + '</div>' +
+            '<button class="detail-copy-btn" id="detailCopyBtn" title="Copy value">' +
+            '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+            '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>' +
+            '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>' +
+            '</svg>' +
+            '<span class="detail-copy-label">Copy</span>' +
+            '</button>' +
+            '</div>' +
+            dataContent +
+            '</div>';
 
         let pathRowContent =
             '<div class="dm-label">Path</div>' +
@@ -1103,6 +1294,23 @@
             '</div>' +
             '</div>' +
             dataSection;
+
+        // Wire up copy button
+        let copyBtn = document.getElementById('detailCopyBtn');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', function () {
+                let text = extractCopyText(entry.data, entry.type || 'info');
+                navigator.clipboard.writeText(text).then(function () {
+                    let label = copyBtn.querySelector('.detail-copy-label');
+                    if (label) {
+                        label.textContent = 'Copied!';
+                        setTimeout(function () {
+                            label.textContent = 'Copy';
+                        }, 1500);
+                    }
+                });
+            });
+        }
     }
 
     // ─── Filters ────────────────────────────────────────────
@@ -1315,6 +1523,33 @@
         if (!btn) return;
         openInEditor(btn.dataset.path || '', btn.dataset.file || '', parseInt(btn.dataset.line || '0', 10));
     });
+
+
+    /**
+     * Handles click on a .php-access-path element.
+     * Copies the PHP access path to the clipboard and shows a brief tooltip.
+     *
+     * @param {Event} e - The click event.
+     */
+    function handleAccessPathClick(e) {
+        let pathEl = e.target.closest('.php-access-path');
+        if (!pathEl) return;
+
+        e.stopPropagation();
+
+        let accessPath = pathEl.dataset.path || '';
+        if (!accessPath) return;
+
+        navigator.clipboard.writeText(accessPath).then(function () {
+            pathEl.classList.add('copied');
+            setTimeout(function () {
+                pathEl.classList.remove('copied');
+            }, 1200);
+        });
+    }
+
+    dom.debugLog.addEventListener('click', handleAccessPathClick);
+    dom.detailBody.addEventListener('click', handleAccessPathClick);
 
     // ─── Session Timer ──────────────────────────────────────
     let sessionExpiresAt = null;
