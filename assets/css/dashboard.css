@@ -131,21 +131,6 @@ body {
     border-radius: 50%;
     background: var(--accent);
     box-shadow: 0 0 var(--space-xs) var(--accent);
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-
-    0%,
-    100% {
-        opacity: 1;
-        box-shadow: 0 0 var(--space-xs) var(--accent);
-    }
-
-    50% {
-        opacity: 0.5;
-        box-shadow: 0 0 4px var(--accent);
-    }
 }
 
 .session-id {
