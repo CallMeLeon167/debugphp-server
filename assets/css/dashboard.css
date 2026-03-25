@@ -495,6 +495,14 @@ body {
     text-align: center;
 }
 
+.version-info {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    text-align: center;
+    margin-top: var(--space-xs);
+}
+
 /* ─── Debug Panel ────────────────────────────────────────── */
 .debug-panel {
     flex: 1;

@@ -103,6 +103,7 @@ use DebugPHP\Server\Config;
             </div>
             <div class="sidebar-footer">
                 <div class="session-timer" id="sessionTimer">Connecting...</div>
+                <div class="version-info">DebugPHP-Server v<?= Config::version() ?></div>
             </div>
         </aside>
 

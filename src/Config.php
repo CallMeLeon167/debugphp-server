@@ -23,9 +23,13 @@ namespace DebugPHP\Server;
  *
  *   Config::baseUrl()
  *   Config::sessionLifetimeHours()
+ *   Config::version()
  */
 final class Config
 {
+    /** @var string */
+    private string $version = '1.0.0';
+
     /** @var self */
     private static self $instance;
 
@@ -94,6 +98,16 @@ final class Config
     public static function sessionLifetimeHours(): int
     {
         return self::instance()->sessionLifetimeHours;
+    }
+
+    /**
+     * Returns the application version.
+     *
+     * @return string
+     */
+    public static function version(): string
+    {
+        return self::instance()->version;
     }
 
     /**
