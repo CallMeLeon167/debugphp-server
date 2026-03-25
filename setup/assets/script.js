@@ -1,5 +1,6 @@
 (function () {
     'use strict';
+    const BASE = window.__DEBUGPHP_BASE || '';
 
     let connectionTested = false;
 
@@ -49,7 +50,7 @@
         try {
             let data = getFormData();
             data.action = 'test';
-            let response = await fetch('/setup/', {
+            let response = await fetch(BASE + '/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
@@ -76,7 +77,7 @@
         try {
             let data = getFormData();
             data.action = 'save_env';
-            let response = await fetch('/setup/', {
+            let response = await fetch(BASE + '/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
@@ -100,7 +101,7 @@
         try {
             let data = getFormData();
             data.action = 'setup';
-            let response = await fetch('/setup/', {
+            let response = await fetch(BASE + '/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),

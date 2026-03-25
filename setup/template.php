@@ -42,6 +42,9 @@ function renderHead(): void
         <link href="<?= Config::basePath() ?>/../assets/fonts/fonts.css" rel="stylesheet">
         <link rel="stylesheet" href="<?= Config::basePath() ?>/assets/styles.css">
     </head>
+    <script>
+        window.__DEBUGPHP_BASE = <?= json_encode(Config::basePath(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES) ?>;
+    </script>
 <?php
 }
 /**
@@ -113,6 +116,7 @@ function renderConfiguredScreen(): void
  */
 function renderWizard(bool $envExists, array $values): void
 {
+    $dashboardUrl = rtrim(str_replace('/setup', '', (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . (is_string($_SERVER['HTTP_HOST'] ?? null) ? $_SERVER['HTTP_HOST'] : '') . (is_string($_SERVER['REQUEST_URI'] ?? null) ? $_SERVER['REQUEST_URI'] : '')), '/');;
 ?>
     <!DOCTYPE html>
     <html lang="en">
@@ -154,7 +158,7 @@ function renderWizard(bool $envExists, array $values): void
                     <div class="form-group">
                         <label class="form-label">Site URL</label>
                         <input class="form-input" id="siteUrl" type="url"
-                            value="<?= e($values['site_url']) ?>" placeholder="http://localhost">
+                            value="<?= e($dashboardUrl) ?>" placeholder="http://localhost">
                     </div>
                     <div class="form-group">
                         <label class="form-label">App Name</label>
@@ -254,7 +258,7 @@ function renderWizard(bool $envExists, array $values): void
                     <h2>You're all set!</h2>
                     <p>Your DebugPHP server is configured and ready to go.</p>
                     <p>Open the dashboard and create your first debug session.</p>
-                    <a href="<?= Config::siteUrl() ?>" class="btn-open-dashboard">Open Dashboard &rarr;</a>
+                    <a href="<?= e($dashboardUrl) ?>" class="btn-open-dashboard">Open Dashboard &rarr;</a>
                 </div>
             </div>
 
