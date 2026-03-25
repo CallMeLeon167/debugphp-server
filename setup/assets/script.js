@@ -6,8 +6,6 @@
 
     function getFormData() {
         return {
-            site_url: document.getElementById('siteUrl').value,
-            app_name: document.getElementById('appName').value,
             db_host: document.getElementById('dbHost').value,
             db_port: document.getElementById('dbPort').value,
             db_database: document.getElementById('dbDatabase').value,
