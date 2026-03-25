@@ -260,7 +260,7 @@ function renderWizard(bool $envExists, array $values): void
 
         </div>
 
-        <script src="<?= Config::basePath() ?>/setup/assets/script.js"></script>
+        <script src="<?= Config::basePath() ?>/assets/script.js"></script>
     </body>
 
     </html>
