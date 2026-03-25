@@ -17,7 +17,8 @@ declare(strict_types=1);
 $autoloader = __DIR__ . '/vendor/autoload.php';
 
 if (!file_exists($autoloader)) {
-    header('Location: /setup/');
+    $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
+    header("Location: {$base}/setup/");
     exit;
 }
 
@@ -25,7 +26,8 @@ require_once $autoloader;
 
 // ─── Check for .env ──────────────────────────────────────
 if (!file_exists(__DIR__ . '/.env')) {
-    header('Location: /setup/');
+    $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
+    header("Location: {$base}/setup/");
     exit;
 }
 
