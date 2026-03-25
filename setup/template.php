@@ -15,6 +15,10 @@ declare(strict_types=1);
 
 use DebugPHP\Server\Config;
 
+$setupBase = Config::baseUrl();
+$appBase = dirname($setupBase);
+$appBase = $appBase === '/' || $appBase === '\\' ? '' : $appBase;
+
 /**
  * Escapes a value for safe output inside an HTML attribute or text node.
  * 
@@ -33,18 +37,19 @@ function e(string $value): string
  */
 function renderHead(): void
 {
+    global $appBase, $setupBase;
 ?>
 
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>DebugPHP — Setup</title>
-        <link href="<?= Config::basePath() ?>/../assets/fonts/fonts.css" rel="stylesheet">
-        <link rel="stylesheet" href="<?= Config::basePath() ?>/assets/styles.css">
+        <link href="<?= e($appBase) ?>/assets/fonts/fonts.css" rel="stylesheet">
+        <link rel="stylesheet" href="<?= e($setupBase) ?>/assets/styles.css">
+        <script>
+            window.__DEBUGPHP_BASE = <?= json_encode($setupBase, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES) ?>;
+        </script>
     </head>
-    <script>
-        window.__DEBUGPHP_BASE = <?= json_encode(Config::basePath(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES) ?>;
-    </script>
 <?php
 }
 /**
@@ -54,6 +59,7 @@ function renderHead(): void
  */
 function renderComposerNotice(): void
 {
+    global $setupBase;
 ?>
     <!DOCTYPE html>
     <html lang="en">
@@ -68,7 +74,7 @@ function renderComposerNotice(): void
             <div class="hint space-m"><code>composer install</code></div>
             <p>in the project root. This will install all necessary dependencies.</p>
             <br>
-            <a href="<?= Config::siteUrl() ?>/setup/" class="btn btn-primary">Refresh Page</a>
+            <a href="<?= e($setupBase) ?>/setup/" class="btn btn-primary">Refresh Page</a>
         </div>
     </body>
 
@@ -83,6 +89,7 @@ function renderComposerNotice(): void
  */
 function renderConfiguredScreen(): void
 {
+    global $appBase;
 ?>
     <!DOCTYPE html>
     <html lang="en">
@@ -99,7 +106,7 @@ function renderConfiguredScreen(): void
                 Need to reconfigure? Set<br>
                 <code>ALLOW_SETUP</code> to <code>true</code> in <code>setup/index.php</code>
             </div>
-            <a href="<?= Config::siteUrl() ?>" class="btn-open-dashboard">Open Dashboard &rarr;</a>
+            <a href="<?= e($appBase) ?>/" class="btn-open-dashboard">Open Dashboard &rarr;</a>
         </div>
     </body>
 
@@ -116,7 +123,7 @@ function renderConfiguredScreen(): void
  */
 function renderWizard(bool $envExists, array $values): void
 {
-    $dashboardUrl = rtrim(str_replace('/setup', '', (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . (is_string($_SERVER['HTTP_HOST'] ?? null) ? $_SERVER['HTTP_HOST'] : '') . (is_string($_SERVER['REQUEST_URI'] ?? null) ? $_SERVER['REQUEST_URI'] : '')), '/');;
+    global $appBase, $setupBase;
 ?>
     <!DOCTYPE html>
     <html lang="en">
@@ -151,23 +158,6 @@ function renderWizard(bool $envExists, array $values): void
                         <span class="env-badge missing">&#9888; No .env file — please fill in your settings</span>
                     <?php endif; ?>
                 </div>
-
-                <!-- Application -->
-                <div class="section-label">Application</div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Site URL</label>
-                        <input class="form-input" id="siteUrl" type="url"
-                            value="<?= e($dashboardUrl) ?>" placeholder="http://localhost">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">App Name</label>
-                        <input class="form-input" id="appName" type="text"
-                            value="<?= e($values['app_name']) ?>" placeholder="DebugPHP">
-                    </div>
-                </div>
-
-                <div class="form-divider"></div>
 
                 <!-- Database -->
                 <div class="section-label">Database</div>
@@ -258,13 +248,13 @@ function renderWizard(bool $envExists, array $values): void
                     <h2>You're all set!</h2>
                     <p>Your DebugPHP server is configured and ready to go.</p>
                     <p>Open the dashboard and create your first debug session.</p>
-                    <a href="<?= e($dashboardUrl) ?>" class="btn-open-dashboard">Open Dashboard &rarr;</a>
+                    <a href="<?= e($appBase) ?>/" class="btn-open-dashboard">Open Dashboard &rarr;</a>
                 </div>
             </div>
 
         </div>
 
-        <script src="<?= Config::basePath() ?>/assets/script.js"></script>
+        <script src="<?= e($setupBase) ?>/assets/script.js"></script>
     </body>
 
     </html>

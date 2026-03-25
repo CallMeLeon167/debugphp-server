@@ -21,9 +21,7 @@ namespace DebugPHP\Server;
  * Initialized once in Application::__construct() via Config::init().
  * After that, values are accessible statically from anywhere:
  *
- *   Config::siteUrl()
- *   Config::basePath()
- *   Config::appName()
+ *   Config::baseUrl()
  *   Config::sessionLifetimeHours()
  */
 final class Config
@@ -31,40 +29,34 @@ final class Config
     /** @var self */
     private static self $instance;
 
-    /** @var string */
-    private string $siteUrl;
-
-    /** @var string */
-    private string $basePath;
-
-    /** @var string */
-    private string $appName;
+    /**
+     * The root URL path of the application (no trailing slash).
+     *
+     * Root install:  ""
+     * Subdirectory:  "/debugphp"
+     *
+     * @var string
+     */
+    private string $baseUrl;
 
     /** @var int */
     private int $sessionLifetimeHours;
 
     private function __construct()
     {
-        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-        $host     = isset($_SERVER['HTTP_HOST']) && is_string($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
-
-        $siteUrl = isset($_ENV['SITE_URL']) && is_string($_ENV['SITE_URL'])
-            ? $_ENV['SITE_URL']
-            : $protocol . '://' . $host;
-        $appName = isset($_ENV['APP_NAME']) && is_string($_ENV['APP_NAME']) ? $_ENV['APP_NAME'] : 'DebugPHP';
         $sessionLifetime = isset($_ENV['SESSION_LIFETIME_HOURS']) && is_numeric($_ENV['SESSION_LIFETIME_HOURS'])
             ? (int) $_ENV['SESSION_LIFETIME_HOURS']
             : 24;
 
-        $this->siteUrl = rtrim($siteUrl, '/');
-        $this->appName = $appName;
         $this->sessionLifetimeHours = $sessionLifetime;
 
         $scriptName = isset($_SERVER['SCRIPT_NAME']) && is_string($_SERVER['SCRIPT_NAME'])
             ? $_SERVER['SCRIPT_NAME']
             : '/index.php';
 
-        $this->basePath = rtrim(dirname($scriptName), '/');
+        $dir = dirname($scriptName);
+
+        $this->baseUrl = $dir === '/' || $dir === '\\' ? '' : $dir;
     }
 
     /**
@@ -79,36 +71,19 @@ final class Config
     }
 
     /**
-     * Returns the base URL of the application (no trailing slash).
+     * Returns the root URL path of the application (no trailing slash).
+     *
+     * This is the single source of truth for all path-related output:
+     * HTML asset references, JS API base, and link targets.
+     *
+     * Root install:  ""           → assets at "/assets/..."
+     * Subdirectory:  "/debugphp"  → assets at "/debugphp/assets/..."
      *
      * @return string
      */
-    public static function siteUrl(): string
+    public static function baseUrl(): string
     {
-        return self::instance()->siteUrl;
-    }
-
-    /**
-     * Returns the path prefix for subdirectory installations (no trailing slash).
-     *
-     * Root install:  ""
-     * Subdirectory:  "/debugphp"
-     *
-     * @return string
-     */
-    public static function basePath(): string
-    {
-        return self::instance()->basePath;
-    }
-
-    /**
-     * Returns the application name.
-     *
-     * @return string
-     */
-    public static function appName(): string
-    {
-        return self::instance()->appName;
+        return self::instance()->baseUrl;
     }
 
     /**

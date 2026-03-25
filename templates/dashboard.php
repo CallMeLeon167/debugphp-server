@@ -10,10 +10,10 @@ use DebugPHP\Server\Config;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DebugPHP — Dashboard</title>
-    <link href="<?= Config::siteUrl() ?>/assets/fonts/fonts.css" rel="stylesheet">
-    <link rel="stylesheet" href="<?= Config::siteUrl() ?>/assets/css/dashboard.css">
+    <link href="<?= Config::baseUrl() ?>/assets/fonts/fonts.css" rel="stylesheet">
+    <link rel="stylesheet" href="<?= Config::baseUrl() ?>/assets/css/dashboard.css">
     <script>
-        window.__DEBUGPHP_BASE = <?= json_encode(Config::basePath(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES) ?>;
+        window.__DEBUGPHP_BASE = <?= json_encode(Config::baseUrl(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES) ?>;
     </script>
 </head>
 
@@ -138,7 +138,7 @@ use DebugPHP\Server\Config;
 
     </div>
 
-    <script src="<?= Config::siteUrl() ?>/assets/js/dashboard.js"></script>
+    <script src="<?= Config::baseUrl() ?>/assets/js/dashboard.js"></script>
 </body>
 
 </html>

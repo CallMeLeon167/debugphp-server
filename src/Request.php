@@ -58,12 +58,12 @@ final class Request
         $rawPath = parse_url($uri, PHP_URL_PATH);
         $path    = is_string($rawPath) ? $rawPath : '/';
 
-        $basePath = Config::basePath();
+        $baseUrl = Config::baseUrl();
 
-        if ($basePath !== '' && str_starts_with($path, $basePath)) {
-            $path = substr($path, strlen($basePath));
+        if ($baseUrl !== '' && str_starts_with($path, $baseUrl)) {
+            $path = substr($path, strlen($baseUrl));
 
-            if (empty($path)) {
+            if ($path === '' || $path === false) {
                 $path = '/';
             }
         }

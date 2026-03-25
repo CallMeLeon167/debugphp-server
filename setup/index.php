@@ -42,6 +42,8 @@ if (!file_exists($autoloader)) {
 
 require_once $autoloader;
 
+Config::init();
+
 require_once __DIR__ . '/SetupManager.php';
 require_once __DIR__ . '/template.php';
 
@@ -63,7 +65,6 @@ if ($setup->envExists()) {
     }
 }
 
-Config::init();
 
 $isConfigured = $setup->isConfigured($loadedEnv);
 
