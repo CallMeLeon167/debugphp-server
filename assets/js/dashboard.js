@@ -7,6 +7,7 @@
 
 (function () {
     'use strict';
+    const BASE = window.__DEBUGPHP_BASE || '';
 
     // ─── State ──────────────────────────────────────────────
     let sessionId = null;
@@ -196,7 +197,7 @@
      * @returns {Promise<Object>} The session data.
      */
     async function createSession() {
-        const response = await fetch('/api/session', { method: 'POST' });
+        const response = await fetch(BASE + '/api/session', { method: 'POST' });
         return response.json();
     }
 
@@ -206,7 +207,7 @@
     async function clearSession() {
         if (!sessionId) return;
 
-        await fetch('/api/clear', {
+        await fetch(BASE + '/api/clear', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ session: sessionId }),
@@ -222,7 +223,7 @@
      */
     async function deleteEntry(entryId, currentSessionId) {
         try {
-            const response = await fetch('/api/entry/' + entryId, {
+            const response = await fetch(BASE + '/api/entry/' + entryId, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ session: currentSessionId }),
@@ -513,7 +514,7 @@
             eventSource.close();
         }
 
-        eventSource = new EventSource('/api/stream/' + id);
+        eventSource = new EventSource(BASE + '/api/stream/' + id);
 
         eventSource.addEventListener('connected', function () {
             dom.sessionInfo.classList.remove('disconnected');

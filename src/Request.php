@@ -30,7 +30,7 @@ final class Request
 {
     /**
      * @param string               $method HTTP method (GET, POST, etc.).
-     * @param string               $path   Normalised URL path (no trailing slash).
+     * @param string               $path   Normalised URL path (no trailing slash, basePath stripped).
      * @param array<string, mixed> $body   Decoded JSON body or empty array.
      */
     private function __construct(
@@ -43,7 +43,8 @@ final class Request
      * Creates a Request instance from the current PHP superglobals.
      *
      * Reads the HTTP method and URL from $_SERVER, decodes the JSON
-     * body from php://input, and normalises the path (removes trailing slash).
+     * body from php://input, strips the configured basePath, and
+     * normalises the path (removes trailing slash).
      *
      * @return self The current HTTP request.
      */
@@ -56,6 +57,16 @@ final class Request
         $uri = is_string($rawUri) ? $rawUri : '/';
         $rawPath = parse_url($uri, PHP_URL_PATH);
         $path    = is_string($rawPath) ? $rawPath : '/';
+
+        $basePath = Config::basePath();
+
+        if ($basePath !== '' && str_starts_with($path, $basePath)) {
+            $path = substr($path, strlen($basePath));
+
+            if ($path === '' || $path === false) {
+                $path = '/';
+            }
+        }
 
         if ($path !== '/' && str_ends_with($path, '/')) {
             $path = rtrim($path, '/');
@@ -88,7 +99,7 @@ final class Request
     }
 
     /**
-     * Returns the normalised URL path (e.g. "/api/session").
+     * Returns the normalised URL path with basePath stripped (e.g. "/api/session").
      *
      * @return string The URL path.
      */

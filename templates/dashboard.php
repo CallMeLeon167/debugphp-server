@@ -12,6 +12,9 @@ use DebugPHP\Server\Config;
     <title>DebugPHP — Dashboard</title>
     <link href="<?= Config::siteUrl() ?>/assets/fonts/fonts.css" rel="stylesheet">
     <link rel="stylesheet" href="<?= Config::siteUrl() ?>/assets/css/dashboard.css">
+    <script>
+        window.__DEBUGPHP_BASE = <?= json_encode(Config::basePath(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES) ?>;
+    </script>
 </head>
 
 <body>

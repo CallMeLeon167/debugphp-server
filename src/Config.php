@@ -22,15 +22,25 @@ namespace DebugPHP\Server;
  * After that, values are accessible statically from anywhere:
  *
  *   Config::siteUrl()
+ *   Config::basePath()
  *   Config::appName()
  *   Config::sessionLifetimeHours()
  */
 final class Config
 {
+    /** @var self */
     private static self $instance;
 
+    /** @var string */
     private string $siteUrl;
+
+    /** @var string */
+    private string $basePath;
+
+    /** @var string */
     private string $appName;
+
+    /** @var int */
     private int $sessionLifetimeHours;
 
     private function __construct()
@@ -47,6 +57,9 @@ final class Config
         $this->siteUrl = rtrim($siteUrl, '/');
         $this->appName = $appName;
         $this->sessionLifetimeHours = $sessionLifetime;
+
+        $parsed = parse_url($this->siteUrl, PHP_URL_PATH);
+        $this->basePath = is_string($parsed) ? rtrim($parsed, '/') : '';
     }
 
     /**
@@ -68,6 +81,19 @@ final class Config
     public static function siteUrl(): string
     {
         return self::instance()->siteUrl;
+    }
+
+    /**
+     * Returns the path prefix for subdirectory installations (no trailing slash).
+     *
+     * Root install:  ""
+     * Subdirectory:  "/debugphp"
+     *
+     * @return string
+     */
+    public static function basePath(): string
+    {
+        return self::instance()->basePath;
     }
 
     /**
