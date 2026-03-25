@@ -35,7 +35,10 @@ final class Config
 
     private function __construct()
     {
-        $siteUrl = isset($_ENV['SITE_URL']) && is_string($_ENV['SITE_URL']) ? $_ENV['SITE_URL'] : 'http://localhost';
+        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host     = $_SERVER['HTTP_HOST'];
+
+        $siteUrl = isset($_ENV['SITE_URL']) && is_string($_ENV['SITE_URL']) ? $_ENV['SITE_URL'] : $protocol . '://' . $host;
         $appName = isset($_ENV['APP_NAME']) && is_string($_ENV['APP_NAME']) ? $_ENV['APP_NAME'] : 'DebugPHP';
         $sessionLifetime = isset($_ENV['SESSION_LIFETIME_HOURS']) && is_numeric($_ENV['SESSION_LIFETIME_HOURS'])
             ? (int) $_ENV['SESSION_LIFETIME_HOURS']
