@@ -60,7 +60,7 @@ final class Config
         $this->appName = $appName;
         $this->sessionLifetimeHours = $sessionLifetime;
 
-        $parsed = parse_url($this->siteUrl, PHP_URL_PATH);
+        $parsed = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         $this->basePath = is_string($parsed) ? rtrim($parsed, '/') : '';
     }
 

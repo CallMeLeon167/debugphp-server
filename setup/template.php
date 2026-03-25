@@ -39,8 +39,8 @@ function renderHead(): void
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>DebugPHP — Setup</title>
-        <link href="<?= Config::siteUrl() ?>/assets/fonts/fonts.css" rel="stylesheet">
-        <link rel="stylesheet" href="<?= Config::siteUrl() ?>/setup/assets/styles.css">
+        <link href="<?= Config::basePath() ?>/assets/fonts/fonts.css" rel="stylesheet">
+        <link rel="stylesheet" href="<?= Config::basePath() ?>/assets/styles.css">
     </head>
 <?php
 }
