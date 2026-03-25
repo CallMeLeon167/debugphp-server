@@ -63,7 +63,7 @@ final class Request
         if ($basePath !== '' && str_starts_with($path, $basePath)) {
             $path = substr($path, strlen($basePath));
 
-            if ($path === '' || $path === false) {
+            if (empty($path)) {
                 $path = '/';
             }
         }
