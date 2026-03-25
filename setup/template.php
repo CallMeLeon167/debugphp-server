@@ -15,7 +15,7 @@ declare(strict_types=1);
 
 use DebugPHP\Server\Config;
 
-$setupBase = Config::baseUrl();
+$setupBase = (string) Config::baseUrl();
 $appBase = dirname($setupBase);
 $appBase = $appBase === '/' || $appBase === '\\' ? '' : $appBase;
 
@@ -37,6 +37,8 @@ function e(string $value): string
  */
 function renderHead(): void
 {
+    /** @var string $appBase */
+    /** @var string $setupBase */
     global $appBase, $setupBase;
 ?>
 
@@ -59,6 +61,7 @@ function renderHead(): void
  */
 function renderComposerNotice(): void
 {
+    /** @var string $setupBase */
     global $setupBase;
 ?>
     <!DOCTYPE html>
@@ -89,6 +92,7 @@ function renderComposerNotice(): void
  */
 function renderConfiguredScreen(): void
 {
+    /** @var string $appBase */
     global $appBase;
 ?>
     <!DOCTYPE html>
@@ -123,6 +127,8 @@ function renderConfiguredScreen(): void
  */
 function renderWizard(bool $envExists, array $values): void
 {
+    /** @var string $appBase */
+    /** @var string $setupBase */
     global $appBase, $setupBase;
 ?>
     <!DOCTYPE html>
