@@ -908,26 +908,26 @@
     }
 
     /**
- * Recursively renders a typed PHP descriptor node as PHP var_dump-style HTML.
- *
- * Expected node shapes (produced by Entry::buildTyped()):
- *   { type: 'null' }
- *   { type: 'bool',      value: boolean }
- *   { type: 'int',       value: number }
- *   { type: 'float',     value: number }
- *   { type: 'string',    length: number, value: string }
- *   { type: 'resource',  value: string }
- *   { type: 'array',     length: number, value: [{key, value},...] }
- *   { type: 'object',    class: string, length: number, value: [{key, value},...] }
- *   { type: 'exception', class: string, value: [{key, value},...] }
- *   { type: 'unknown',   value: string }
- *   { type: 'truncated' }
- *
- * @param {Object} node       - The typed descriptor node.
- * @param {number} depth      - Current indentation depth.
- * @param {string} parentPath - The accumulated PHP access path (e.g. "['data']").
- * @returns {string} HTML string for this node.
- */
+     * Recursively renders a typed PHP descriptor node as PHP var_dump-style HTML.
+     *
+     * Expected node shapes (produced by Entry::buildTyped()):
+     *   { type: 'null' }
+     *   { type: 'bool',      value: boolean }
+     *   { type: 'int',       value: number }
+     *   { type: 'float',     value: number }
+     *   { type: 'string',    length: number, value: string }
+     *   { type: 'resource',  value: string }
+     *   { type: 'array',     length: number, value: [{key, value},...] }
+     *   { type: 'object',    class: string, length: number, value: [{key, value},...] }
+     *   { type: 'exception', class: string, value: [{key, value},...] }
+     *   { type: 'unknown',   value: string }
+     *   { type: 'truncated' }
+     *
+     * @param {Object} node       - The typed descriptor node.
+     * @param {number} depth      - Current indentation depth.
+     * @param {string} parentPath - The accumulated PHP access path (e.g. "['data']").
+     * @returns {string} HTML string for this node.
+     */
     function renderPhpNode(node, depth, parentPath) {
         if (!node || typeof node.type === 'undefined') {
             return '<span class="php-unknown">' + escapeHtml(JSON.stringify(node)) + '</span>';
@@ -1229,14 +1229,27 @@
         );
     }
 
+    // ─── Session ID Copy ────────────────────────────────────
+
+    dom.sessionId.addEventListener('click', function () {
+        if (!sessionId) return;
+
+        navigator.clipboard.writeText(sessionId).then(function () {
+            dom.sessionId.classList.add('copied');
+            setTimeout(function () {
+                dom.sessionId.classList.remove('copied');
+            }, 1400);
+        });
+    });
+
     // ─── Detail Panel ───────────────────────────────────────
 
     /**
- * Shows entry details in the side panel.
- *
- * @param {Object}      entry - The entry data.
- * @param {HTMLElement} el    - The clicked DOM element.
- */
+     * Shows entry details in the side panel.
+     *
+     * @param {Object}      entry - The entry data.
+     * @param {HTMLElement} el    - The clicked DOM element.
+     */
     function selectEntry(entry, el) {
         let prev = dom.debugLog.querySelector('.log-entry.selected');
         if (prev) prev.classList.remove('selected');

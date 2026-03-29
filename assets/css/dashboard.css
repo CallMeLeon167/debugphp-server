@@ -1325,6 +1325,47 @@ body {
     font-style: italic;
 }
 
+/* ─── Session ID — Copy on click ─────────────────────── */
+#sessionId {
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    padding: 0 3px;
+    transition: background var(--transition-fast), outline-color var(--transition-fast);
+    outline: 1px solid transparent;
+    outline-offset: 2px;
+    position: relative;
+    display: inline-block;
+}
+
+#sessionId:hover {
+    background: var(--accent-dim);
+    outline-color: var(--accent-mid);
+}
+
+#sessionId.copied {
+    background: var(--accent-dim);
+    outline-color: var(--accent);
+}
+
+#sessionId.copied::after {
+    content: 'Copied!';
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 2px var(--space-xs);
+    border-radius: var(--radius-sm);
+    background: var(--accent);
+    color: var(--bg-primary);
+    font-size: 9px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    white-space: nowrap;
+    pointer-events: none;
+    animation: copiedFadeIn var(--transition-fast) ease;
+    z-index: 10;
+}
+
 /* ─── Scrollbar ──────────────────────────────────────────── */
 ::-webkit-scrollbar {
     width: var(--space-xs);
