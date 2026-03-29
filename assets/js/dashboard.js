@@ -1045,20 +1045,20 @@
     }
 
     /**
-  * Renders an array or object collection as an indented block.
-  *
-  * Each key is wrapped in a clickable span that shows the full PHP access
-  * path as a tooltip and copies it to the clipboard on click.
-  *
-  * @param {string}  header         - Pre-built HTML for the type header line.
-  * @param {Array}   items          - Array of {key, value} descriptor pairs.
-  * @param {string}  pad            - Indentation for the closing brace.
-  * @param {string}  childPad       - Indentation for child entries.
-  * @param {number}  depth          - Current depth (passed to child nodes).
-  * @param {boolean} forceStringKeys - If true, always quote keys (objects).
-  * @param {string}  parentPath     - The accumulated PHP access path up to this level.
-  * @returns {string} HTML string.
-  */
+     * Renders an array or object collection as an indented block.
+     *
+     * Each key is wrapped in a clickable span that shows the full PHP access
+     * path as a tooltip and copies it to the clipboard on click.
+     *
+     * @param {string}  header         - Pre-built HTML for the type header line.
+     * @param {Array}   items          - Array of {key, value} descriptor pairs.
+     * @param {string}  pad            - Indentation for the closing brace.
+     * @param {string}  childPad       - Indentation for child entries.
+     * @param {number}  depth          - Current depth (passed to child nodes).
+     * @param {boolean} forceStringKeys - If true, always quote keys (objects).
+     * @param {string}  parentPath     - The accumulated PHP access path up to this level.
+     * @returns {string} HTML string.
+     */
     function renderPhpCollection(header, items, pad, childPad, depth, forceStringKeys, parentPath) {
         var html = header + ' <span class="php-brace">{</span>\n';
         var basePath = parentPath || '';
