@@ -1,3 +1,10 @@
+/**
+ * DebugPHP Dashboard
+ *
+ * (c) Leon Schmidt — MIT License
+ * https://github.com/CallMeLeon167/debugphp-server
+ */
+
 (function () {
     'use strict';
     const BASE = window.__DEBUGPHP_BASE || '';
