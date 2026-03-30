@@ -514,18 +514,11 @@ body {
 .debug-toolbar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border);
 }
 
-.debug-toolbar-left {
-    display: flex;
-    align-items: center;
-}
-
-.entry-count,
-.custom-count {
+.debug-toolbar span {
     font-family: var(--font-mono);
     font-size: var(--text-sm);
     color: var(--text-muted);
@@ -533,8 +526,7 @@ body {
     padding: var(--space-sm) var(--space-lg);
 }
 
-.entry-count strong,
-.custom-count strong {
+.debug-toolbar span {
     color: var(--text-primary);
 }
 
@@ -1213,7 +1205,6 @@ body {
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     overflow-x: auto;
-    max-height: 220px;
     overflow-y: auto;
     white-space: pre;
     font-family: var(--font-mono);
@@ -1222,6 +1213,7 @@ body {
     color: var(--text-secondary);
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
+    resize: vertical;
 }
 
 .php-dump::-webkit-scrollbar {
