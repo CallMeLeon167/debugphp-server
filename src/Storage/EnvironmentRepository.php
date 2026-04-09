@@ -52,7 +52,7 @@ final class EnvironmentRepository
      * Overwrites any previously stored environment for this session.
      *
      * @param string                $sessionId The session this environment belongs to.
-     * @param array<string, mixed> $data      The environment key-value pairs.
+     * @param array<string, mixed>  $data      The environment key-value pairs.
      *
      * @return void
      */
