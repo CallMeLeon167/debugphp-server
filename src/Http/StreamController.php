@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace DebugPHP\Server\Http;
 
 use DebugPHP\Server\Storage\EntryRepository;
+use DebugPHP\Server\Storage\EnvironmentRepository;
 use DebugPHP\Server\Storage\MetricRepository;
 use DebugPHP\Server\Storage\SessionRepository;
 
@@ -32,6 +33,7 @@ use DebugPHP\Server\Storage\SessionRepository;
  *   entry          - Sent for each new debug entry
  *   metric         - Sent for each new or updated toolbar metric
  *   metric:remove  - Sent when a metric is no longer present in the current request
+ *   environment    - Sent once on connect with the client's PHP runtime info
  *   expired        - Sent when the session has expired
  *   reconnect      - Sent after MAX_LIFETIME (browser will auto-reconnect)
  *   : heartbeat    - Comment sent every cycle to keep the connection alive
@@ -39,7 +41,7 @@ use DebugPHP\Server\Storage\SessionRepository;
 final class StreamController
 {
     /**
-     * Polling interval in seconds between database checks.
+     * Polling interval in seconds between storage checks.
      */
     private const POLL_INTERVAL = 1;
 
@@ -52,25 +54,27 @@ final class StreamController
     /**
      * Creates a new stream controller.
      *
-     * @param SessionRepository $sessions Repository for session lookups.
-     * @param EntryRepository   $entries  Repository for fetching new entries.
-     * @param MetricRepository  $metrics  Repository for toolbar metrics.
+     * @param SessionRepository     $sessions     Repository for session lookups.
+     * @param EntryRepository       $entries      Repository for fetching new entries.
+     * @param MetricRepository      $metrics      Repository for toolbar metrics.
+     * @param EnvironmentRepository $environments Repository for environment data.
      */
     public function __construct(
         private readonly SessionRepository $sessions,
         private readonly EntryRepository $entries,
         private readonly MetricRepository $metrics,
+        private readonly EnvironmentRepository $environments,
     ) {}
 
     /**
      * Starts the SSE stream for a given session.
      *
-     * Sets the required HTTP headers, pushes all existing metrics once on
+     * Sets the required HTTP headers, pushes environment and metrics once on
      * connect, then enters a polling loop that:
      *   1. Fetches and pushes new debug entries
      *   2. Fetches and pushes updated metrics (metric event)
      *   3. Fetches and pushes soft-deleted metrics (metric:remove event),
-     *      then hard-deletes them from the database
+     *      then hard-deletes them from storage
      *
      * @param string $sessionId The session ID from the URL.
      */
@@ -96,6 +100,11 @@ final class StreamController
             'resumed_from' => $lastId,
         ]);
 
+        $environment = $this->environments->find($sessionId);
+        if ($environment !== null) {
+            $this->sendEvent('environment', $environment);
+        }
+
         $existingMetrics = $this->metrics->findBySession($sessionId);
         foreach ($existingMetrics as $metric) {
             $this->sendEvent('metric', [
@@ -107,6 +116,10 @@ final class StreamController
         $startTime       = time();
         $lastMetricCheck = date('Y-m-d H:i:s');
         $lastRemoveCheck = date('Y-m-d H:i:s', time() - 1);
+
+        $lastEnvHash = $environment !== null
+            ? md5(json_encode($environment, JSON_THROW_ON_ERROR))
+            : null;
 
         while (true) {
             if (connection_aborted() !== 0) {
@@ -189,6 +202,17 @@ final class StreamController
                 $this->metrics->hardDeleteRemoved($sessionId);
             }
 
+            // ── 4. Environment changes ───────────────────────
+            $currentEnv = $this->environments->find($sessionId);
+            $currentHash = $currentEnv !== null
+                ? md5(json_encode($currentEnv, JSON_THROW_ON_ERROR))
+                : null;
+
+            if ($currentHash !== $lastEnvHash && $currentEnv !== null) {
+                $this->sendEvent('environment', $currentEnv);
+                $lastEnvHash = $currentHash;
+            }
+
             echo ": heartbeat\n\n";
             $this->flush();
 
@@ -236,19 +260,17 @@ final class StreamController
         @ini_set('zlib.output_compression', '0');
 
         while (ob_get_level() > 0) {
-            ob_end_clean();
+            ob_end_flush();
         }
-
-        ob_implicit_flush(true);
     }
 
     /**
-     * Flushes the output buffer to deliver data to the client immediately.
+     * Flushes the output buffer to ensure data is sent immediately.
      */
     private function flush(): void
     {
-        if (ob_get_level() > 0) {
-            ob_flush();
+        if (function_exists('ob_flush')) {
+            @ob_flush();
         }
 
         flush();

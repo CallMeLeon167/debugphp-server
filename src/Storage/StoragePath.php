@@ -152,6 +152,28 @@ final class StoragePath
     }
 
     /**
+     * Returns the absolute path to the environments directory.
+     *
+     * @return string
+     */
+    public function environmentsDir(): string
+    {
+        return $this->basePath . '/environments';
+    }
+
+    /**
+     * Returns the absolute path to the environment file for a given session.
+     *
+     * @param string $sessionId The 32-character hex session ID.
+     *
+     * @return string
+     */
+    public function environmentFile(string $sessionId): string
+    {
+        return $this->environmentsDir() . '/' . $sessionId . '.json';
+    }
+
+    /**
      * Ensures all required subdirectories exist.
      *
      * Called automatically in the constructor. Safe to call multiple times.
@@ -165,6 +187,7 @@ final class StoragePath
             $this->sessionsDir(),
             $this->basePath . '/entries',
             $this->metricsDir(),
+            $this->environmentsDir(),
         ];
 
         foreach ($dirs as $dir) {

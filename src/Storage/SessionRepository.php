@@ -147,6 +147,12 @@ final class SessionRepository
             unlink($metricsFile);
         }
 
+        // Clean up environment file
+        $environmentFile = $this->storage->environmentFile($id);
+        if (is_file($environmentFile)) {
+            unlink($environmentFile);
+        }
+
         return $existed;
     }
 

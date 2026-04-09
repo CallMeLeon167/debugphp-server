@@ -79,7 +79,8 @@ final class SetupManager
 
         return is_dir($storagePath . '/sessions')
             && is_dir($storagePath . '/entries')
-            && is_dir($storagePath . '/metrics');
+            && is_dir($storagePath . '/metrics')
+            && is_dir($storagePath . '/environments');
     }
 
     /**
@@ -186,6 +187,7 @@ final class SetupManager
             $storagePath . '/sessions',
             $storagePath . '/entries',
             $storagePath . '/metrics',
+            $storagePath . '/environments',
         ];
 
         try {

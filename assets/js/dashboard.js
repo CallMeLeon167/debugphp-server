@@ -153,7 +153,6 @@
         sessionInfo: document.getElementById('sessionInfo'),
         debugLog: document.getElementById('debugLog'),
         emptyState: document.getElementById('emptyState'),
-        visibleCount: document.getElementById('visibleCount'),
         searchInput: document.getElementById('searchInput'),
         pauseBtn: document.getElementById('pauseBtn'),
         autoClearBtn: document.getElementById('autoClearBtn'),
@@ -167,6 +166,7 @@
         typeFilterChips: document.getElementById('typeFilterChips'),
         labelFilterSection: document.getElementById('labelFilterSection'),
         labelFilterChips: document.getElementById('labelFilterChips'),
+        debugToolbar: document.getElementById('debugToolbar'),
     };
 
     // ─── Color / Label class mapping ─────────────────────────
@@ -546,9 +546,47 @@
             // EventSource will auto-reconnect
         });
 
+        eventSource.addEventListener('environment', function (e) {
+            let data = JSON.parse(e.data);
+            renderEnvironment(data);
+        });
+
         eventSource.onerror = function () {
             dom.sessionInfo.classList.add('disconnected');
         };
+    }
+
+    // ─── Environment ────────────────────────────────────────
+
+    /**
+     * Renders environment data as chips in the debug toolbar.
+     * Replaces any previously rendered environment chips.
+     *
+     * @param {Object<string, string>} data - The environment key-value pairs.
+     */
+    function renderEnvironment(data) {
+        clearEnvironment();
+        Object.keys(data).forEach(function (key) {
+            if (key == 'session') return;
+
+            let value = data[key];
+            if (!value) return;
+
+            let chip = document.createElement('span');
+            chip.className = 'env-chip';
+            chip.innerHTML =
+                '<span class="env-key">' + escapeHtml(key) + ':</span>' +
+                '<span class="env-value">' + escapeHtml(value) + '</span>';
+
+            dom.debugToolbar.appendChild(chip);
+        });
+    }
+
+    /**
+     * Clears all environment chips from the toolbar.
+     */
+    function clearEnvironment() {
+        dom.debugToolbar.innerHTML = '';
     }
 
     // ─── Metrics ────────────────────────────────────────────
@@ -1375,8 +1413,6 @@
             entry.style.display = show ? '' : 'none';
             if (show) visible++;
         });
-
-        dom.visibleCount.textContent = String(visible);
     }
 
     // ─── Helpers ────────────────────────────────────────────
@@ -1415,7 +1451,6 @@
         dom.statTotal.textContent = String(stats.total);
         dom.statErrors.textContent = String(stats.errors);
         dom.statSql.textContent = String(stats.sql);
-        dom.visibleCount.textContent = String(stats.total);
     }
 
     // ─── Event Listeners ────────────────────────────────────
@@ -1451,6 +1486,7 @@
     document.getElementById('newSessionBtn').addEventListener('click', function () {
         clearDomEntries();
         clearMetrics();
+        clearEnvironment();
         lastRequestId = null;
         startNewSession();
     });

@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace DebugPHP\Server;
 
 use DebugPHP\Server\Storage\EntryRepository;
+use DebugPHP\Server\Storage\EnvironmentRepository;
 use DebugPHP\Server\Storage\MetricRepository;
 use DebugPHP\Server\Storage\SessionRepository;
 use DebugPHP\Server\Storage\StoragePath;
@@ -49,12 +50,14 @@ final class Application
     {
         Config::init();
 
-        $storage           = new StoragePath();
-        $sessionRepository = new SessionRepository($storage);
-        $entryRepository   = new EntryRepository($storage);
-        $metricRepository  = new MetricRepository($storage);
-        $controller        = new Controller($sessionRepository, $entryRepository, $metricRepository);
-        $streamController  = new StreamController($sessionRepository, $entryRepository, $metricRepository);
+        $storage               = new StoragePath();
+        $sessionRepository     = new SessionRepository($storage);
+        $entryRepository       = new EntryRepository($storage);
+        $metricRepository      = new MetricRepository($storage);
+        $environmentRepository = new EnvironmentRepository($storage);
+
+        $controller            = new Controller($sessionRepository, $entryRepository, $metricRepository, $environmentRepository);
+        $streamController      = new StreamController($sessionRepository, $entryRepository, $metricRepository, $environmentRepository);
 
         $this->router = new Router();
         $this->registerRoutes($controller, $streamController);
@@ -93,6 +96,8 @@ final class Application
         $this->router->post('/api/clear', [$controller, 'clearEntries']);
 
         $this->router->post('/api/metric', [$controller, 'storeMetric']);
+
+        $this->router->post('/api/environment', [$controller, 'storeEnvironment']);
 
         $this->router->get('/api/stream/{id}', [$streamController, 'handle']);
     }

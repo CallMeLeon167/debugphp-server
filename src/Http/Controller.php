@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace DebugPHP\Server\Http;
 
 use DebugPHP\Server\Storage\EntryRepository;
+use DebugPHP\Server\Storage\EnvironmentRepository;
 use DebugPHP\Server\Storage\MetricRepository;
 use DebugPHP\Server\Storage\SessionRepository;
 use DebugPHP\Server\Request;
@@ -32,14 +33,16 @@ final class Controller
     /**
      * Creates a new controller.
      *
-     * @param SessionRepository $sessions Repository for session operations.
-     * @param EntryRepository   $entries  Repository for entry operations.
-     * @param MetricRepository  $metrics  Repository for metric operations.
+     * @param SessionRepository     $sessions     Repository for session operations.
+     * @param EntryRepository       $entries      Repository for entry operations.
+     * @param MetricRepository      $metrics      Repository for metric operations.
+     * @param EnvironmentRepository $environments Repository for environment operations.
      */
     public function __construct(
         private readonly SessionRepository $sessions,
         private readonly EntryRepository $entries,
         private readonly MetricRepository $metrics,
+        private readonly EnvironmentRepository $environments,
     ) {}
 
     // ─── Dashboard ───────────────────────────────────────────
@@ -79,12 +82,10 @@ final class Controller
     }
 
     /**
-     * Deletes a session and all its associated entries and metrics.
+     * Deletes a debug session and all associated data.
      *
      * DELETE /api/session/{id}
-     * Response: 200 OK or 404 Not Found.
-     *
-     * @param string $id The session ID from the URL.
+     * Response: 200 on success, 404 if not found.
      */
     public function deleteSession(string $id): void
     {
@@ -113,7 +114,7 @@ final class Controller
      *   type       (string) Optional type  (default: info)
      *   origin     (object) Optional {file, path, line}
      *   timestamp  (float)  Optional, defaults to microtime(true)
-     * 
+     *
      * Response: 201 with the ID of the new entry.
      */
     public function storeEntry(): void
@@ -133,12 +134,10 @@ final class Controller
             return;
         }
 
-        $rawOrigin = $request->get('origin');
-
-        /** @var array<string, mixed> $origin */
-        $origin = is_array($rawOrigin) ? $rawOrigin : [];
-
         $requestId = $request->getString('request_id');
+
+        /** @var array{file?: mixed, path?: mixed, line?: mixed} $origin */
+        $origin = is_array($request->get('origin')) ? $request->get('origin') : [];
 
         if ($requestId !== '') {
             $this->metrics->softDeleteStale($sessionId, $requestId);
@@ -163,48 +162,34 @@ final class Controller
             requestId: $requestId,
             data: $request->get('data') ?? '',
             meta: $meta,
-            timestamp: $request->has('timestamp') ? $timestamp : microtime(true),
+            timestamp: $timestamp,
         );
 
         $this->json(['id' => $entryId], 201);
     }
 
     /**
-     * Deletes a single debug entry by its ID.
+     * Deletes a single debug entry.
      *
-     * DELETE /api/entry/{id:int}
-     *
-     * Expected JSON body:
-     *   session (string) Session ID — ensures only the owning session can delete
-     *
-     * Response: 200 { deleted: true } or 400/404 on error.
-     *
-     * @param string $id The entry ID from the URL (numeric string).
+     * DELETE /api/entry/{id}
+     * Response: 200 on success, 400/404 on error.
      */
     public function deleteEntry(string $id): void
     {
-        $entryId = (int) $id;
-
-        if ($entryId <= 0) {
-            $this->json(['error' => 'Invalid entry ID'], 400);
-
-            return;
-        }
-
         $request   = Request::fromGlobals();
         $sessionId = $request->getString('session');
 
         if ($sessionId === '') {
-            $this->json(['error' => 'Missing session ID'], 400);
+            $sessionId = $_GET['session'] ?? '';
 
-            return;
+            if (!is_string($sessionId) || $sessionId === '') {
+                $this->json(['error' => 'Missing session ID'], 400);
+
+                return;
+            }
         }
 
-        if ($this->sessions->find($sessionId) === null) {
-            $this->json(['error' => 'Session not found or expired'], 404);
-
-            return;
-        }
+        $entryId = (int) $id;
 
         if (!$this->entries->deleteById($entryId, $sessionId)) {
             $this->json(['error' => 'Entry not found'], 404);
@@ -219,10 +204,6 @@ final class Controller
      * Clears all entries for a session.
      *
      * POST /api/clear
-     *
-     * Expected JSON body:
-     *   session (string) Session ID
-     *
      * Response: 200 with the count of deleted entries.
      */
     public function clearEntries(): void
@@ -301,7 +282,38 @@ final class Controller
         $this->metrics->upsert($sessionId, $key, $value, $requestId);
         $this->metrics->softDeleteStale($sessionId, $requestId);
 
-        $this->json(['stored' => true]);
+        $this->json(['ok' => true]);
+    }
+
+    // ─── Environment ─────────────────────────────────────────
+
+    /**
+     * Stores environment data for a debug session.
+     * Each call overwrites the previous environment data entirely.
+     *
+     * POST /api/environment
+     * Response: 200 OK or 400/404 on error.
+     */
+    public function storeEnvironment(): void
+    {
+        $request   = Request::fromGlobals();
+        $sessionId = $request->getString('session');
+
+        if ($sessionId === '') {
+            $this->json(['error' => 'Missing session ID'], 400);
+
+            return;
+        }
+
+        if ($this->sessions->find($sessionId) === null) {
+            $this->json(['error' => 'Session not found or expired'], 404);
+
+            return;
+        }
+
+        $this->environments->save($sessionId, $request->body());
+
+        $this->json(['ok' => true]);
     }
 
     // ─── Helpers ─────────────────────────────────────────────
@@ -309,8 +321,8 @@ final class Controller
     /**
      * Sends a JSON response with the given HTTP status code.
      *
-     * @param array<string, mixed>|list<mixed> $data   The response data.
-     * @param int                              $status HTTP status code (default: 200).
+     * @param array<string, mixed> $data   The response data.
+     * @param int                  $status The HTTP status code.
      */
     private function json(array $data, int $status = 200): void
     {

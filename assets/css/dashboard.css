@@ -518,16 +518,24 @@ body {
     border-bottom: 1px solid var(--border);
 }
 
-.debug-toolbar span {
+.debug-toolbar span.env-chip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--bg-card);
+    white-space: nowrap;
     font-family: var(--font-mono);
     font-size: var(--text-sm);
-    color: var(--text-muted);
     border-right: 1px solid var(--border);
     padding: var(--space-sm) var(--space-lg);
 }
 
-.debug-toolbar span {
-    color: var(--text-primary);
+.env-chip .env-key {
+    color: var(--text-secondary);
+}
+
+.env-chip .env-value {
+    color: var(--accent);
 }
 
 /* ─── Log Entries ────────────────────────────────────────── */

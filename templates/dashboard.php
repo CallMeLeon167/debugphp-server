@@ -120,8 +120,7 @@ use DebugPHP\Server\Config;
 
         <!-- Debug Panel -->
         <div class="debug-panel">
-            <div class="debug-toolbar">
-                <span class="entry-count"><strong id="visibleCount">0</strong> entries</span>
+            <div class="debug-toolbar" id="debugToolbar">
             </div>
 
             <div class="debug-log" id="debugLog">
