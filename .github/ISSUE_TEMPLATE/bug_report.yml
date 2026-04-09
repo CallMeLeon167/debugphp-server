@@ -48,14 +48,6 @@ body:
       required: true
 
   - type: input
-    id: db_version
-    attributes:
-      label: Database version
-      placeholder: "e.g. MySQL 8.0.33 / MariaDB 10.11.4"
-    validations:
-      required: false
-
-  - type: input
     id: webserver
     attributes:
       label: Web server / runtime

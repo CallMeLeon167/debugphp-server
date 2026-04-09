@@ -11,7 +11,6 @@
 - [ ] Bug fix
 - [ ] New feature
 - [ ] Refactoring (no functional change)
-- [ ] Database schema change
 - [ ] Configuration / .env change
 - [ ] Documentation update
 - [ ] Other: <!-- describe -->
@@ -33,7 +32,6 @@
 <!-- How did you verify this works? -->
 
 - [ ] Tested locally
-- [ ] Tested with a real database (MySQL / MariaDB)
 - [ ] Tested the affected dashboard UI in the browser
 - [ ] Tested the SSE stream stays connected and receives entries correctly
 
@@ -50,11 +48,4 @@
 - [ ] `composer analyse` passes with zero PHPStan errors (level 10)
 - [ ] All new public methods and classes have complete PHPDoc blocks
 - [ ] `declare(strict_types=1)` is present in every new or modified PHP file
-- [ ] Database schema changes include a migration SQL snippet in the PR description (if applicable)
-
----
-
-## Migration SQL
-
-<!-- If this PR changes the database schema, paste the migration query here so reviewers and users know what to run. Delete this section if not applicable. -->
 

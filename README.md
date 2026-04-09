@@ -17,7 +17,6 @@ This is the server and dashboard component of [DebugPHP](https://github.com/Call
 ## Requirements
 
 - PHP 8.1+
-- MySQL 5.7+ or MariaDB 10.3+
 - Composer
 
 ---
@@ -31,28 +30,6 @@ composer install
 ```
 
 Then open `http://localhost:8080/setup/` in your browser and follow the setup wizard.
-
-The wizard will:
-1. Test your database connection
-2. Write the `.env` file
-3. Create the required tables
-
----
-
-## Configuration
-
-All configuration lives in `.env` after setup. The available options are:
-
-| Variable | Default | Description |
-|---|---|---|
-| `SITE_URL` | `http://localhost` | Base URL of the server |
-| `APP_NAME` | `DebugPHP` | Application name |
-| `DB_HOST` | `localhost` | Database host |
-| `DB_PORT` | `3306` | Database port |
-| `DB_DATABASE` | `debugphp` | Database name |
-| `DB_USERNAME` | `root` | Database user |
-| `DB_PASSWORD` | — | Database password |
-| `SESSION_LIFETIME_HOURS` | `24` | How long a debug session stays active |
 
 ---
 
@@ -78,22 +55,6 @@ Debug::send($user, 'User')->color('blue');
 ```
 
 See the [DebugPHP client repository](https://github.com/CallMeLeon167/debugphp) for the full API documentation.
-
----
-
-## API
-
-The server exposes a REST API consumed by the client package and the dashboard.
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/session` | Create a new debug session |
-| `DELETE` | `/api/session/{id}` | Delete a session |
-| `GET` | `/api/stream/{id}` | SSE stream for a session |
-| `POST` | `/api/debug` | Store a debug entry |
-| `DELETE` | `/api/entry/{id}` | Delete a single entry |
-| `POST` | `/api/clear` | Clear all entries for a session |
-| `POST` | `/api/metric` | Store or update a toolbar metric |
 
 ---
 

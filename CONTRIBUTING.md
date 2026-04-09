@@ -14,7 +14,7 @@ Thanks for your interest in contributing! Please read this before opening an iss
 
 ## Setup
 
-**Requirements:** PHP 8.1+, Composer, MySQL or MariaDB.
+**Requirements:** PHP 8.1+, Composer.
 
 ```bash
 git clone https://github.com/CallMeLeon167/debugphp-server.git
@@ -22,41 +22,12 @@ cd debugphp-server
 composer install
 ```
 
-Copy `.env.example` to `.env` and fill in your local database credentials, or run the setup wizard at `/setup/`.
+Copy `.env.example` to `.env` and fill in your credentials, or run the setup wizard at `/setup/`.
 
 Run PHPStan before every commit to make sure everything is clean:
 
 ```bash
 composer analyse
-```
-
----
-
-## Project structure
-
-```
-src/
-├── Application.php          — Bootstraps and wires all dependencies
-├── Config.php               — Reads and exposes .env configuration
-├── Request.php              — Encapsulates the incoming HTTP request
-├── Router.php               — Matches routes and dispatches to controllers
-├── Database/
-│   ├── Connection.php       — Establishes the PDO connection
-│   ├── EntryRepository.php  — DB access for debug entries
-│   ├── MetricRepository.php — DB access for toolbar metrics
-│   └── SessionRepository.php — DB access for sessions
-└── Http/
-    ├── Controller.php       — Handles all REST API routes
-    └── StreamController.php — Handles the SSE stream
-setup/
-├── index.php                — Setup wizard entry point
-├── SetupManager.php         — Setup logic (DB connection, table creation, .env writing)
-└── template.php             — Setup wizard HTML templates
-templates/
-└── dashboard.php            — Dashboard HTML template
-assets/
-├── css/dashboard.css
-└── js/dashboard.js
 ```
 
 ---
@@ -99,11 +70,7 @@ public function findNewerThan(string $sessionId, int $afterId): array
 - `declare(strict_types=1)` at the top of every PHP file
 - PSR-4 autoloading, namespace `DebugPHP\Server\`
 - `final` classes wherever possible
-- No external runtime dependencies — the `require` section in `composer.json` stays as-is (only `vlucas/phpdotenv` and `ext-pdo` / `ext-pdo_mysql`)
-
-### Database schema changes
-
-If your PR changes the database schema, include a migration SQL snippet in the PR description so users with an existing installation know what to run. Use `ALTER TABLE` — never drop and recreate tables with existing data.
+- No external runtime dependencies — the `require` section in `composer.json` stays as-is
 
 ### Dashboard changes
 
@@ -118,5 +85,4 @@ Before opening a PR, make sure:
 - [ ] `composer analyse` passes with zero errors
 - [ ] All new public methods and classes have complete PHPDoc blocks
 - [ ] `declare(strict_types=1)` is present in every new or modified PHP file
-- [ ] Schema changes include a migration SQL snippet in the PR description
 - [ ] Dashboard changes have been tested manually in the browser
