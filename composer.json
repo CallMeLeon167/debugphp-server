@@ -25,8 +25,6 @@
     },
     "require": {
         "php": "^8.1",
-        "ext-pdo": "*",
-        "ext-pdo_mysql": "*",
         "vlucas/phpdotenv": "^5.6"
     },
     "require-dev": {

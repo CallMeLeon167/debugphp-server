@@ -2,3 +2,4 @@
 /.phpstan-cache/
 .env
 composer.lock
+/data/

@@ -15,10 +15,10 @@ declare(strict_types=1);
 
 namespace DebugPHP\Server;
 
-use DebugPHP\Server\Database\Connection;
-use DebugPHP\Server\Database\EntryRepository;
-use DebugPHP\Server\Database\MetricRepository;
-use DebugPHP\Server\Database\SessionRepository;
+use DebugPHP\Server\Storage\EntryRepository;
+use DebugPHP\Server\Storage\MetricRepository;
+use DebugPHP\Server\Storage\SessionRepository;
+use DebugPHP\Server\Storage\StoragePath;
 use DebugPHP\Server\Http\Controller;
 use DebugPHP\Server\Http\StreamController;
 
@@ -37,6 +37,8 @@ final class Application
 {
     /**
      * The router that manages all registered routes.
+     *
+     * @var Router
      */
     private Router $router;
 
@@ -47,10 +49,10 @@ final class Application
     {
         Config::init();
 
-        $connection        = new Connection();
-        $sessionRepository = new SessionRepository($connection);
-        $entryRepository   = new EntryRepository($connection);
-        $metricRepository  = new MetricRepository($connection);
+        $storage           = new StoragePath();
+        $sessionRepository = new SessionRepository($storage);
+        $entryRepository   = new EntryRepository($storage);
+        $metricRepository  = new MetricRepository($storage);
         $controller        = new Controller($sessionRepository, $entryRepository, $metricRepository);
         $streamController  = new StreamController($sessionRepository, $entryRepository, $metricRepository);
 
@@ -60,6 +62,8 @@ final class Application
 
     /**
      * Dispatches the incoming HTTP request.
+     *
+     * @return void
      */
     public function run(): void
     {
@@ -72,6 +76,8 @@ final class Application
      *
      * @param Controller       $controller       The HTTP controller.
      * @param StreamController $streamController The SSE stream controller.
+     *
+     * @return void
      */
     private function registerRoutes(Controller $controller, StreamController $streamController): void
     {

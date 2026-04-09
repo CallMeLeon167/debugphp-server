@@ -15,24 +15,28 @@ declare(strict_types=1);
 
 use DebugPHP\Server\Config;
 
+/** @var string $setupBase */
 $setupBase = (string) Config::baseUrl();
+
+/** @var string $appBase */
 $appBase = dirname($setupBase);
 $appBase = $appBase === '/' || $appBase === '\\' ? '' : $appBase;
 
 /**
- * Escapes a value for safe output inside an HTML attribute or text node.
- * 
- * @param string $value The value to escape.
+ * Escapes a string for safe HTML output.
+ *
+ * @param string $value The raw value.
+ *
  * @return string The escaped value.
  */
 function e(string $value): string
 {
-    return htmlspecialchars($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
 /**
- * Renders the <head> section of the HTML pages.
- * 
+ * Renders the <head> tag used by all wizard screens.
+ *
  * @return void
  */
 function renderHead(): void
@@ -54,6 +58,7 @@ function renderHead(): void
     </head>
 <?php
 }
+
 /**
  * Renders the "composer install required" screen.
  *
@@ -87,7 +92,7 @@ function renderComposerNotice(): void
 
 /**
  * Renders the "already configured" screen.
- * 
+ *
  * @return void
  */
 function renderConfiguredScreen(): void
@@ -104,7 +109,7 @@ function renderConfiguredScreen(): void
         <div class="card configured-card">
             <div class="icon">&#10003;</div>
             <h2>DebugPHP is configured and ready!</h2>
-            <p>Your server is set up and the database tables exist.</p>
+            <p>Your server is set up and the storage directories exist.</p>
             <p>Everything is working — you can start debugging.</p>
             <div class="hint">
                 Need to reconfigure? Set<br>
@@ -123,6 +128,7 @@ function renderConfiguredScreen(): void
  *
  * @param bool                  $envExists  Whether a .env file already exists.
  * @param array<string, string> $values     Current form values (from .env or defaults).
+ *
  * @return void
  */
 function renderWizard(bool $envExists, array $values): void
@@ -148,16 +154,14 @@ function renderWizard(bool $envExists, array $values): void
             <div class="steps-indicator">
                 <div class="step-dot active" id="stepDot1">1</div>
                 <div class="step-line" id="stepLine1"></div>
-                <div class="step-dot" id="stepDot2">2</div>
-                <div class="step-line" id="stepLine2"></div>
-                <div class="step-dot" id="stepDot3">&#10003;</div>
+                <div class="step-dot" id="stepDot2">&#10003;</div>
             </div>
 
             <!-- Step 1: Configuration -->
             <div id="step1" class="card">
                 <div class="card-title">Configuration</div>
                 <div class="card-desc">
-                    <p>Enter your application settings and database credentials below.</p>
+                    <p>Enter your storage settings below.</p>
                     <?php if ($envExists): ?>
                         <span class="env-badge exists">&#10003; .env file found — values loaded</span>
                     <?php else: ?>
@@ -165,37 +169,13 @@ function renderWizard(bool $envExists, array $values): void
                     <?php endif; ?>
                 </div>
 
-                <!-- Database -->
-                <div class="section-label">Database</div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Host</label>
-                        <input class="form-input" id="dbHost" type="text"
-                            value="<?= e($values['db_host']) ?>" placeholder="localhost">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Port</label>
-                        <input class="form-input" id="dbPort" type="text"
-                            value="<?= e($values['db_port']) ?>" placeholder="3306">
-                    </div>
-                </div>
+                <!-- Storage -->
+                <div class="section-label">Storage</div>
                 <div class="form-row full">
                     <div class="form-group">
-                        <label class="form-label">Database Name</label>
-                        <input class="form-input" id="dbDatabase" type="text"
-                            value="<?= e($values['db_database']) ?>" placeholder="debugphp">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Username</label>
-                        <input class="form-input" id="dbUsername" type="text"
-                            value="<?= e($values['db_username']) ?>" placeholder="root">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Password</label>
-                        <input class="form-input" id="dbPassword" type="password"
-                            value="<?= e($values['db_password']) ?>" placeholder="••••••••">
+                        <label class="form-label">Storage Path</label>
+                        <input class="form-input" id="storagePath" type="text"
+                            value="<?= e($values['storage_path']) ?>" placeholder="data">
                     </div>
                 </div>
 
@@ -215,40 +195,19 @@ function renderWizard(bool $envExists, array $values): void
                 <div id="alertTest" class="alert"></div>
 
                 <div class="btn-row">
-                    <button class="btn btn-secondary" id="btnTest" onclick="testConnection()">
-                        <span class="btn-text">&#128268; Test Connection</span>
+                    <button class="btn btn-secondary" id="btnTest" onclick="testStorage()">
+                        <span class="btn-text">&#128268; Test Storage</span>
                         <span class="spinner"></span>
                     </button>
-                    <button class="btn btn-primary" id="btnNext" onclick="saveEnvAndNext()" disabled>
-                        <span class="btn-text">Save &amp; Continue &rarr;</span>
+                    <button class="btn btn-primary" id="btnSetup" onclick="runSetup()" disabled>
+                        <span class="btn-text">Save &amp; Setup &rarr;</span>
                         <span class="spinner"></span>
                     </button>
                 </div>
             </div>
 
-            <!-- Step 2: Create Tables -->
+            <!-- Step 2: Done -->
             <div id="step2" class="card" style="display:none;">
-                <div class="card-title">Create Database Tables</div>
-                <div class="card-desc">
-                    Your .env file has been saved. Click the button below to create the required tables.
-                </div>
-                <div class="code-box">
-                    <span class="kw">CREATE TABLE</span> <span class="val">sessions</span> (...)<br>
-                    <span class="kw">CREATE TABLE</span> <span class="val">entries</span> (...) <br>
-                    <span class="kw">CREATE TABLE</span> <span class="val">metrics</span> (...)
-                </div>
-                <div id="alertSetup" class="alert"></div>
-                <div class="btn-row">
-                    <button class="btn btn-secondary" onclick="goBack()">&larr; Back</button>
-                    <button class="btn btn-primary" id="btnSetup" onclick="runSetup()">
-                        <span class="btn-text">Run Setup</span>
-                        <span class="spinner"></span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Step 3: Done -->
-            <div id="step3" class="card" style="display:none;">
                 <div class="success-screen">
                     <div class="success-icon">&#9889;</div>
                     <h2>You're all set!</h2>

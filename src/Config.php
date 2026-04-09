@@ -24,6 +24,7 @@ namespace DebugPHP\Server;
  *   Config::baseUrl()
  *   Config::sessionLifetimeHours()
  *   Config::version()
+ *   Config::storagePath()
  */
 final class Config
 {
@@ -46,6 +47,9 @@ final class Config
     /** @var int */
     private int $sessionLifetimeHours;
 
+    /** @var string */
+    private string $storagePath;
+
     private function __construct()
     {
         $sessionLifetime = isset($_ENV['SESSION_LIFETIME_HOURS']) && is_numeric($_ENV['SESSION_LIFETIME_HOURS'])
@@ -53,6 +57,10 @@ final class Config
             : 24;
 
         $this->sessionLifetimeHours = $sessionLifetime;
+
+        $this->storagePath = isset($_ENV['STORAGE_PATH']) && is_string($_ENV['STORAGE_PATH'])
+            ? $_ENV['STORAGE_PATH']
+            : 'data';
 
         $scriptName = isset($_SERVER['SCRIPT_NAME']) && is_string($_SERVER['SCRIPT_NAME'])
             ? $_SERVER['SCRIPT_NAME']
@@ -77,12 +85,6 @@ final class Config
     /**
      * Returns the root URL path of the application (no trailing slash).
      *
-     * This is the single source of truth for all path-related output:
-     * HTML asset references, JS API base, and link targets.
-     *
-     * Root install:  ""           → assets at "/assets/..."
-     * Subdirectory:  "/debugphp"  → assets at "/debugphp/assets/..."
-     *
      * @return string
      */
     public static function baseUrl(): string
@@ -98,6 +100,16 @@ final class Config
     public static function sessionLifetimeHours(): int
     {
         return self::instance()->sessionLifetimeHours;
+    }
+
+    /**
+     * Returns the configured storage path.
+     *
+     * @return string
+     */
+    public static function storagePath(): string
+    {
+        return self::instance()->storagePath;
     }
 
     /**

@@ -9,20 +9,16 @@
     'use strict';
     const BASE = window.__DEBUGPHP_BASE || '';
 
-    let connectionTested = false;
+    let storageTested = false;
 
     /**
-     * Collects and returns the current values of all database and session configuration fields.
+     * Collects and returns the current values of all configuration fields.
      *
-     * @returns {{ db_host: string, db_port: string, db_database: string, db_username: string, db_password: string, session_lifetime: string }}
+     * @returns {{ storage_path: string, session_lifetime: string }}
      */
     function getFormData() {
         return {
-            db_host: document.getElementById('dbHost').value,
-            db_port: document.getElementById('dbPort').value,
-            db_database: document.getElementById('dbDatabase').value,
-            db_username: document.getElementById('dbUsername').value,
-            db_password: document.getElementById('dbPassword').value,
+            storage_path: document.getElementById('storagePath').value,
             session_lifetime: document.getElementById('sessionLifetime').value,
         };
     }
@@ -50,13 +46,8 @@
      */
     function setLoading(btnId, loading) {
         let btn = document.getElementById(btnId);
-        if (loading) {
-            btn.classList.add('loading');
-            btn.disabled = true;
-        } else {
-            btn.classList.remove('loading');
-            btn.disabled = false;
-        }
+        btn.disabled = loading;
+        btn.classList.toggle('loading', loading);
     }
 
     /**
@@ -64,28 +55,27 @@
      * Dots before the active step are marked as done, the active step is highlighted,
      * and the connecting lines are updated accordingly.
      *
-     * @param {number} step - The current step number (1–3).
+     * @param {number} step - The current step number (1–2).
      * @returns {void}
      */
     function setStep(step) {
-        for (let i = 1; i <= 3; i++) {
+        for (let i = 1; i <= 2; i++) {
             let dot = document.getElementById('stepDot' + i);
             dot.classList.remove('active', 'done');
             if (i < step) dot.classList.add('done');
             else if (i === step) dot.classList.add('active');
         }
         document.getElementById('stepLine1').classList.toggle('done', step > 1);
-        document.getElementById('stepLine2').classList.toggle('done', step > 2);
     }
 
     /**
-     * Tests the database connection using the current form values.
-     * On success, enables the "Next" button and marks the connection as tested.
-     * On failure, disables the "Next" button and displays an error alert.
+     * Tests the storage directory using the current form values.
+     * On success, enables the "Setup" button and marks the storage as tested.
+     * On failure, disables the "Setup" button and displays an error alert.
      *
      * @returns {Promise<void>}
      */
-    window.testConnection = async function () {
+    window.testStorage = async function () {
         setLoading('btnTest', true);
         try {
             let data = getFormData();
@@ -98,12 +88,12 @@
             let result = await response.json();
             if (result.success) {
                 showAlert('alertTest', 'success', result.message);
-                connectionTested = true;
-                document.getElementById('btnNext').disabled = false;
+                storageTested = true;
+                document.getElementById('btnSetup').disabled = false;
             } else {
                 showAlert('alertTest', 'error', result.message);
-                connectionTested = false;
-                document.getElementById('btnNext').disabled = true;
+                storageTested = false;
+                document.getElementById('btnSetup').disabled = true;
             }
         } catch (err) {
             showAlert('alertTest', 'error', 'Request failed: ' + err.message);
@@ -112,86 +102,62 @@
     };
 
     /**
-     * Saves the current configuration as a .env file and advances to step 2.
-     * Only proceeds if the connection has been successfully tested beforehand.
-     * Displays an error alert if the request fails or the server returns an error.
-     *
-     * @returns {Promise<void>}
-     */
-    window.saveEnvAndNext = async function () {
-        if (!connectionTested) return;
-        setLoading('btnNext', true);
-        try {
-            let data = getFormData();
-            data.action = 'save_env';
-            let response = await fetch(BASE + '/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
-            });
-            let result = await response.json();
-            if (result.success) {
-                document.getElementById('step1').style.display = 'none';
-                document.getElementById('step2').style.display = 'block';
-                setStep(2);
-            } else {
-                showAlert('alertTest', 'error', result.message);
-            }
-        } catch (err) {
-            showAlert('alertTest', 'error', 'Request failed: ' + err.message);
-        }
-        setLoading('btnNext', false);
-    };
-
-    /**
-     * Triggers the database migration/setup routine on the server and advances to step 3 on success.
-     * Displays an error alert if the request fails or the server returns an error.
+     * Saves the .env file and creates storage directories in one step.
+     * Only proceeds if the storage has been successfully tested beforehand.
      *
      * @returns {Promise<void>}
      */
     window.runSetup = async function () {
+        if (!storageTested) return;
         setLoading('btnSetup', true);
         try {
             let data = getFormData();
-            data.action = 'setup';
-            let response = await fetch(BASE + '/', {
+
+            // Step A: Save .env
+            data.action = 'save_env';
+            let envResponse = await fetch(BASE + '/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
             });
-            let result = await response.json();
-            if (result.success) {
-                document.getElementById('step2').style.display = 'none';
-                document.getElementById('step3').style.display = 'block';
-                setStep(3);
+            let envResult = await envResponse.json();
+
+            if (!envResult.success) {
+                showAlert('alertTest', 'error', envResult.message);
+                setLoading('btnSetup', false);
+                return;
+            }
+
+            // Step B: Create directories
+            data.action = 'setup';
+            let setupResponse = await fetch(BASE + '/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            let setupResult = await setupResponse.json();
+
+            if (setupResult.success) {
+                document.getElementById('step1').style.display = 'none';
+                document.getElementById('step2').style.display = 'block';
+                setStep(2);
             } else {
-                showAlert('alertSetup', 'error', result.message);
+                showAlert('alertTest', 'error', setupResult.message);
             }
         } catch (err) {
-            showAlert('alertSetup', 'error', 'Request failed: ' + err.message);
+            showAlert('alertTest', 'error', 'Request failed: ' + err.message);
         }
         setLoading('btnSetup', false);
     };
 
     /**
-     * Navigates back from step 2 to step 1 by toggling the visibility of the respective step containers.
-     *
-     * @returns {void}
+     * Resets the storage tested state and disables the "Setup" button whenever
+     * the storage path field is modified by the user.
      */
-    window.goBack = function () {
-        document.getElementById('step2').style.display = 'none';
-        document.getElementById('step1').style.display = 'block';
-        setStep(1);
-    };
-
-    /**
-     * Resets the connection tested state and disables the "Next" button whenever
-     * any of the database credential fields are modified by the user.
-     */
-    document.querySelectorAll('#dbHost, #dbPort, #dbDatabase, #dbUsername, #dbPassword').forEach(function (input) {
+    document.querySelectorAll('#storagePath, #sessionLifetime').forEach(function (input) {
         input.addEventListener('input', function () {
-            connectionTested = false;
-            document.getElementById('btnNext').disabled = true;
+            storageTested = false;
+            document.getElementById('btnSetup').disabled = true;
             document.getElementById('alertTest').classList.remove('visible');
         });
     });

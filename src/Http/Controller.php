@@ -15,9 +15,9 @@ declare(strict_types=1);
 
 namespace DebugPHP\Server\Http;
 
-use DebugPHP\Server\Database\EntryRepository;
-use DebugPHP\Server\Database\MetricRepository;
-use DebugPHP\Server\Database\SessionRepository;
+use DebugPHP\Server\Storage\EntryRepository;
+use DebugPHP\Server\Storage\MetricRepository;
+use DebugPHP\Server\Storage\SessionRepository;
 use DebugPHP\Server\Request;
 
 /**

@@ -65,7 +65,6 @@ if ($setup->envExists()) {
     }
 }
 
-
 $isConfigured = $setup->isConfigured($loadedEnv);
 
 // ─── Block if already configured ─────────────────────────
@@ -98,9 +97,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     /** @var array<string, mixed> $body */
     $result = match ($body['action']) {
-        'test'     => $setup->testConnection($body),
+        'test'     => $setup->testStorage($body),
         'save_env' => $setup->saveEnv($body),
-        'setup'    => $setup->createTables($body),
+        'setup'    => $setup->createDirectories($body),
         default    => ['success' => false, 'message' => 'Unknown action.'],
     };
 
