@@ -1485,10 +1485,14 @@
     });
 
     // Clear
-    document.getElementById('clearBtn').addEventListener('click', function () {
-        clearSession();
+    document.getElementById('clearBtn').addEventListener('click', async function () {
+        await clearSession();
         clearDomEntries();
         lastRequestId = null;
+
+        if (sessionId) {
+            connectStream(sessionId);
+        }
     });
 
     // New session
