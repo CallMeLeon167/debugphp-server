@@ -514,6 +514,8 @@ body {
 .debug-toolbar {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 0;
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border);
 }
@@ -526,8 +528,9 @@ body {
     white-space: nowrap;
     font-family: var(--font-mono);
     font-size: var(--text-sm);
-    border-right: 1px solid var(--border);
+    border: 1px solid var(--border);
     padding: var(--space-sm) var(--space-lg);
+    margin: -1px;
 }
 
 .env-chip .env-key {
