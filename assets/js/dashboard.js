@@ -167,6 +167,10 @@
         labelFilterSection: document.getElementById('labelFilterSection'),
         labelFilterChips: document.getElementById('labelFilterChips'),
         debugToolbar: document.getElementById('debugToolbar'),
+        sidebar: document.getElementById('sidebar'),
+        sidebarToggle: document.getElementById('sidebarToggle'),
+        sidebarClose: document.getElementById('sidebarClose'),
+        sidebarBackdrop: document.getElementById('sidebarBackdrop'),
     };
 
     // ─── Color / Label class mapping ─────────────────────────
@@ -1297,6 +1301,11 @@
 
         dom.detailPanel.classList.remove('hidden');
 
+        if (window.innerWidth <= 900 && dom.sidebarBackdrop) {
+            dom.sidebarBackdrop.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
         let originFile = (entry.origin && entry.origin.file) ? entry.origin.file : 'unknown';
         let originPath = (entry.origin && entry.origin.path) ? entry.origin.path : 'unknown';
         let originLine = entry.origin ? entry.origin.line : 0;
@@ -1496,6 +1505,11 @@
         dom.detailPanel.classList.add('hidden');
         let prev = dom.debugLog.querySelector('.log-entry.selected');
         if (prev) prev.classList.remove('selected');
+
+        if (window.innerWidth <= 900 && dom.sidebarBackdrop && !dom.sidebar.classList.contains('mobile-open')) {
+            dom.sidebarBackdrop.classList.remove('active');
+            document.body.style.overflow = '';
+        }
     });
 
     // ─── Delete Entry (event delegation) ─────────────────────
@@ -1753,6 +1767,67 @@
                 document.body.style.cursor = '';
 
                 localStorage.setItem('debugphp_detail_width', detailPanel.offsetWidth);
+            }
+        });
+    })();
+
+    // ─── Mobile Sidebar Toggle ──────────────────────────────
+
+    /**
+     * Shows/hides the left sidebar as an overlay on mobile devices.
+     */
+    (function initMobileSidebar() {
+        if (!dom.sidebar || !dom.sidebarToggle || !dom.sidebarClose || !dom.sidebarBackdrop) {
+            return;
+        }
+
+        function openSidebar() {
+            dom.sidebar.classList.add('mobile-open');
+            dom.sidebarBackdrop.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSidebar() {
+            dom.sidebar.classList.remove('mobile-open');
+            if (dom.detailPanel.classList.contains('hidden')) {
+                dom.sidebarBackdrop.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+
+        function closeDetailPanel() {
+            if (!dom.detailPanel.classList.contains('hidden')) {
+                dom.detailPanel.classList.add('hidden');
+                let prev = dom.debugLog.querySelector('.log-entry.selected');
+                if (prev) prev.classList.remove('selected');
+            }
+            if (!dom.sidebar.classList.contains('mobile-open')) {
+                dom.sidebarBackdrop.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+
+        dom.sidebarToggle.addEventListener('click', openSidebar);
+        dom.sidebarClose.addEventListener('click', closeSidebar);
+
+        dom.sidebarBackdrop.addEventListener('click', function () {
+            closeSidebar();
+            closeDetailPanel();
+        });
+
+        dom.sidebar.addEventListener('click', function (e) {
+            if (e.target.classList.contains('chip')) {
+                setTimeout(function () {
+                    if (window.innerWidth <= 900) {
+                        closeSidebar();
+                    }
+                }, 150);
+            }
+        });
+
+        window.addEventListener('resize', function () {
+            if (window.innerWidth > 900) {
+                closeSidebar();
             }
         });
     })();

@@ -33,15 +33,24 @@ use DebugPHP\Server\Config;
     <!-- Topbar -->
     <div class="topbar">
         <div class="topbar-left">
+            <!-- Mobile Sidebar Toggle -->
+            <button class="topbar-btn mobile-toggle" id="sidebarToggle" title="Toggle sidebar">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+
             <a href="https://debugphp.dev" class="topbar-logo" target="_blank">
                 Debug<span class="php-highlight">PHP</span>
             </a>
-            <div class="topbar-divider"></div>
+            <div class="topbar-divider hide-mobile"></div>
             <div class="session-info" id="sessionInfo">
                 <div class="session-status"></div>
-                <span class="session-id">Session: <strong id="sessionId">connecting...</strong></span>
+                <span class="session-id"><span class="hide-small">Session: </span><strong id="sessionId">connecting...</strong></span>
             </div>
-            <div class="topbar-divider"></div>
+            <div class="topbar-divider hide-tablet"></div>
             <div class="topbar-metrics" id="topbarMetrics"></div>
         </div>
         <div class="topbar-right">
@@ -61,12 +70,18 @@ use DebugPHP\Server\Config;
                 </div>
             </div>
 
-            <button class="topbar-btn" id="autoClearBtn" title="Auto-clear entries on each new PHP request">
-                &#8635; Auto-clear
+            <button class="topbar-btn hide-mobile" id="autoClearBtn" title="Auto-clear entries on each new PHP request">
+                &#8635; <span class="btn-text">Auto-clear</span>
             </button>
-            <button class="topbar-btn" id="pauseBtn">&#10074;&#10074; Pause</button>
-            <button class="topbar-btn danger" id="clearBtn">&#128465; Clear</button>
-            <button class="topbar-btn new-session" id="newSessionBtn">+ New Session</button>
+            <button class="topbar-btn" id="pauseBtn" title="Pause/Resume stream">
+                &#10074;&#10074; <span class="btn-text hide-small">Pause</span>
+            </button>
+            <button class="topbar-btn danger hide-tablet" id="clearBtn" title="Clear all entries">
+                &#128465; <span class="btn-text">Clear</span>
+            </button>
+            <button class="topbar-btn new-session" id="newSessionBtn">
+                <span class="hide-small">+</span> <span class="btn-text">New<span class="hide-small"> Session</span></span>
+            </button>
         </div>
     </div>
 
@@ -74,7 +89,9 @@ use DebugPHP\Server\Config;
     <div class="main-layout">
 
         <!-- Sidebar -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
+            <!-- Mobile Close Button -->
+            <button class="sidebar-close mobile-only" id="sidebarClose">&times;</button>
 
             <!-- Type Filter (dynamic — only "All" is static, types appear as entries arrive) -->
             <div class="sidebar-header">
@@ -147,6 +164,9 @@ use DebugPHP\Server\Config;
         </aside>
 
     </div>
+
+    <!-- Mobile Sidebar Backdrop -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
     <script src="<?= Config::baseUrl() ?>/assets/js/dashboard.js"></script>
 </body>

@@ -1411,10 +1411,295 @@ body {
 }
 
 /* ─── Responsive ─────────────────────────────────────────── */
-@media (max-width: 1100px) {
 
-    .sidebar,
-    .detail-panel {
+/* Mobile Sidebar Toggle Button */
+.mobile-toggle {
+    display: none !important;
+}
+
+.sidebar-close {
+    display: none;
+}
+
+.sidebar-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 98;
+    opacity: 0;
+    transition: opacity var(--transition-base);
+}
+
+.sidebar-backdrop.active {
+    display: block;
+    opacity: 1;
+}
+
+/* Tablet and below (< 1200px) */
+@media (max-width: 1200px) {
+    :root {
+        --sidebar-width: 220px;
+        --detail-width: 320px;
+    }
+
+    .topbar {
+        padding: 0 var(--space-md);
+    }
+
+    .topbar-left,
+    .topbar-right {
+        gap: var(--space-sm);
+    }
+
+    .hide-tablet {
         display: none !important;
+    }
+}
+
+/* Tablet portrait and mobile landscape (< 900px) */
+@media (max-width: 900px) {
+    :root {
+        --topbar-height: 52px;
+    }
+
+    .mobile-toggle {
+        display: flex !important;
+        padding: var(--space-xs) var(--space-sm);
+    }
+
+    .topbar {
+        padding: 0 var(--space-sm);
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+    }
+
+    .topbar-left {
+        flex: 1;
+        min-width: 0;
+        gap: var(--space-xs);
+    }
+
+    .topbar-right {
+        gap: var(--space-xs);
+    }
+
+    .topbar-logo {
+        font-size: 14px;
+    }
+
+    .topbar-btn {
+        padding: var(--space-xs) var(--space-sm);
+        font-size: var(--text-xs);
+        white-space: nowrap;
+    }
+
+    .topbar-btn .btn-text {
+        font-size: var(--text-xs);
+    }
+
+    .session-id {
+        font-size: var(--text-sm);
+    }
+
+    .topbar-metrics {
+        display: none;
+    }
+
+    .hide-mobile {
+        display: none !important;
+    }
+
+    /* Sidebar as overlay on mobile */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: -280px;
+        bottom: 0;
+        width: 280px;
+        min-width: 280px;
+        z-index: 99;
+        transition: left var(--transition-base);
+        box-shadow: 2px 0 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .sidebar.mobile-open {
+        left: 0;
+    }
+
+    .sidebar-close {
+        display: block;
+        position: absolute;
+        top: var(--space-sm);
+        right: var(--space-sm);
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-size: 28px;
+        cursor: pointer;
+        padding: 0;
+        width: 32px;
+        height: 32px;
+        line-height: 28px;
+        text-align: center;
+        border-radius: var(--radius-md);
+        transition: all var(--transition-fast);
+        z-index: 10;
+    }
+
+    .sidebar-close:hover {
+        background: var(--bg-card-hover);
+        color: var(--text-primary);
+    }
+
+    /* Detail panel also as overlay on tablet */
+    .detail-panel {
+        position: fixed;
+        top: var(--topbar-height);
+        right: -100%;
+        bottom: 0;
+        width: 90vw;
+        max-width: 400px;
+        z-index: 99;
+        transition: right var(--transition-base);
+        box-shadow: -2px 0 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .detail-panel:not(.hidden) {
+        right: 0;
+    }
+
+    .detail-resize-handle {
+        display: none;
+    }
+
+    /* Debug toolbar wrapping */
+    .debug-toolbar {
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: thin;
+    }
+
+    .debug-toolbar::-webkit-scrollbar {
+        height: 3px;
+    }
+}
+
+/* Mobile portrait (< 600px) */
+@media (max-width: 600px) {
+    :root {
+        --topbar-height: 48px;
+        --space-lg: 14px;
+        --space-xl: 16px;
+    }
+
+    .topbar {
+        padding: 0 var(--space-xs);
+        min-height: auto;
+    }
+
+    .topbar-left {
+        flex-wrap: wrap;
+    }
+
+    .topbar-logo {
+        font-size: 13px;
+    }
+
+    .session-info {
+        flex: 1 1 100%;
+        width: 100%;
+        order: 10;
+        padding: var(--space-xs) 0;
+        border-top: 1px solid var(--border);
+        margin-top: var(--space-xs);
+    }
+
+    .session-id {
+        font-size: var(--text-xs);
+    }
+
+    .topbar-right {
+        flex-wrap: wrap;
+    }
+
+    .topbar-btn {
+        padding: 5px var(--space-xs);
+        font-size: 11px;
+    }
+
+    .topbar-btn svg {
+        width: 12px;
+        height: 12px;
+    }
+
+    .editor-picker-btn span {
+        display: none;
+    }
+
+    .hide-small {
+        display: none !important;
+    }
+
+    .sidebar {
+        width: 100%;
+        left: -100%;
+    }
+
+    .detail-panel {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .debug-log {
+        padding: var(--space-xs);
+    }
+
+    .log-entry {
+        padding: var(--space-xs) var(--space-sm);
+        font-size: var(--text-sm);
+    }
+
+    .entry-label {
+        font-size: 9px;
+    }
+
+    .entry-time {
+        font-size: var(--text-xs);
+    }
+
+    .detail-header h3 {
+        font-size: var(--text-sm);
+    }
+
+    .detail-body {
+        padding: var(--space-md);
+    }
+
+    /* Make table scrollable on small screens */
+    .debug-table-scroll {
+        max-width: calc(100vw - 32px);
+    }
+
+    /* Chips more compact */
+    .chip {
+        font-size: 11px;
+        padding: 3px var(--space-xs);
+    }
+
+    .filter-chips {
+        gap: 4px;
+    }
+}
+
+/* Large screens - optimize space usage */
+@media (min-width: 1600px) {
+    :root {
+        --sidebar-width: 300px;
+        --detail-width: 400px;
     }
 }
