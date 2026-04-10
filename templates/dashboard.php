@@ -138,6 +138,7 @@ use DebugPHP\Server\Config;
 
         <!-- Detail Panel -->
         <aside class="detail-panel hidden" id="detailPanel">
+            <div class="detail-resize-handle" id="detailResizeHandle"></div>
             <div class="detail-header">
                 <h3>Entry Details</h3>
                 <button class="detail-close" id="detailClose">&times;</button>

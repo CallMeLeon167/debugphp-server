@@ -752,15 +752,38 @@ body {
 /* ─── Detail Panel ───────────────────────────────────────── */
 .detail-panel {
     width: var(--detail-width);
-    min-width: var(--detail-width);
+    min-width: 280px;
+    max-width: 60vw;
     border-left: 1px solid var(--border);
     background: var(--bg-secondary);
     display: flex;
     flex-direction: column;
+    position: relative;
 }
 
 .detail-panel.hidden {
     display: none;
+}
+
+.detail-resize-handle {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    cursor: ew-resize;
+    background: transparent;
+    z-index: 10;
+    transition: background var(--transition-fast);
+}
+
+.detail-resize-handle:hover,
+.detail-resize-handle.resizing {
+    background: var(--accent-mid);
+}
+
+.detail-panel.resizing {
+    user-select: none;
 }
 
 .detail-header {

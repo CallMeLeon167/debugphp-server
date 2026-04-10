@@ -1125,8 +1125,8 @@
                 );
             }
 
-            html += childPad + keyHtml + '<span class="php-arrow">=&gt;</span>\n';
-            html += childPad + renderPhpNode(item.value, depth + 1, fullPath) + '\n';
+            html += childPad + keyHtml + '<span class="php-arrow">=&gt;</span>';
+            html += renderPhpNode(item.value, depth + 1, fullPath) + '\n';
         });
 
         html += pad + '<span class="php-brace">}</span>';
@@ -1702,6 +1702,60 @@
             console.error('Failed to create session:', err);
         }
     }
+
+    // ─── Detail Panel Resize ────────────────────────────────
+
+    /**
+     * The resize functionality for the detail panel.
+     * Width is persisted in localStorage.
+     */
+    (function initDetailResize() {
+        const detailPanel = dom.detailPanel;
+        const resizeHandle = document.getElementById('detailResizeHandle');
+        let isResizing = false;
+        let startX = 0;
+        let startWidth = 0;
+
+        const savedWidth = localStorage.getItem('debugphp_detail_width');
+        if (savedWidth) {
+            detailPanel.style.width = savedWidth + 'px';
+        }
+
+        resizeHandle.addEventListener('mousedown', function (e) {
+            isResizing = true;
+            startX = e.clientX;
+            startWidth = detailPanel.offsetWidth;
+            resizeHandle.classList.add('resizing');
+            detailPanel.classList.add('resizing');
+            document.body.style.cursor = 'ew-resize';
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', function (e) {
+            if (!isResizing) return;
+
+            const deltaX = startX - e.clientX;
+            const newWidth = startWidth + deltaX;
+
+            const minWidth = 280;
+            const maxWidth = window.innerWidth * 0.6;
+
+            if (newWidth >= minWidth && newWidth <= maxWidth) {
+                detailPanel.style.width = newWidth + 'px';
+            }
+        });
+
+        document.addEventListener('mouseup', function () {
+            if (isResizing) {
+                isResizing = false;
+                resizeHandle.classList.remove('resizing');
+                detailPanel.classList.remove('resizing');
+                document.body.style.cursor = '';
+
+                localStorage.setItem('debugphp_detail_width', detailPanel.offsetWidth);
+            }
+        });
+    })();
 
     // ─── Init ───────────────────────────────────────────────
 
