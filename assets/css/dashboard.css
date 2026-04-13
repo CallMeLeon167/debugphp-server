@@ -672,6 +672,38 @@ body {
     color: var(--blue);
 }
 
+.label-emergency {
+    background: rgba(248, 113, 113, 0.2);
+    color: var(--red);
+    font-weight: 700;
+}
+
+.label-alert {
+    background: rgba(248, 113, 113, 0.18);
+    color: var(--red);
+    font-weight: 600;
+}
+
+.label-critical {
+    background: rgba(248, 113, 113, 0.15);
+    color: var(--red);
+}
+
+.label-warning {
+    background: rgba(251, 146, 60, 0.15);
+    color: var(--orange);
+}
+
+.label-notice {
+    background: rgba(96, 165, 250, 0.15);
+    color: var(--blue);
+}
+
+.label-debug {
+    background: rgba(167, 139, 250, 0.15);
+    color: var(--text-secondary);
+}
+
 .entry-time {
     font-family: var(--font-mono);
     font-size: var(--text-sm);
