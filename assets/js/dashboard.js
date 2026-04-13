@@ -24,16 +24,6 @@
     let typeCounts = new Map();
     let labelCounts = new Map();
 
-    const TYPE_COLORS = {
-        info: 'var(--blue)',
-        sql: 'var(--purple)',
-        error: 'var(--red)',
-        timer: 'var(--yellow)',
-        success: 'var(--accent)',
-        cache: 'var(--orange)',
-        table: 'var(--blue)',
-    };
-
     // ─── Editor Picker ──────────────────────────────────────
 
     /**
@@ -191,6 +181,30 @@
         success: 'label-success',
         cache: 'label-cache',
         table: 'label-table',
+
+        emergency: 'label-emergency',
+        alert: 'label-alert',
+        critical: 'label-critical',
+        warning: 'label-warning',
+        notice: 'label-notice',
+        debug: 'label-debug',
+    };
+
+    const TYPE_COLORS = {
+        info: 'var(--blue)',
+        sql: 'var(--purple)',
+        error: 'var(--red)',
+        timer: 'var(--yellow)',
+        success: 'var(--accent)',
+        cache: 'var(--orange)',
+        table: 'var(--blue)',
+
+        emergency: 'var(--red)',
+        alert: 'var(--red)',
+        critical: 'var(--red)',
+        warning: 'var(--yellow)',
+        notice: 'var(--blue)',
+        debug: 'var(--text-muted)',
     };
 
     // ─── API ────────────────────────────────────────────────
