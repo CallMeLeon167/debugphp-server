@@ -14,14 +14,35 @@
     /**
      * Collects and returns the current values of all configuration fields.
      *
-     * @returns {{ storage_path: string, session_lifetime: string }}
+     * @returns {{ storage_path: string, session_lifetime: string, session_mode: string, session_id: string }}
      */
     function getFormData() {
+        let sessionModeInput = document.querySelector('input[name="sessionMode"]:checked');
+        let sessionMode = sessionModeInput ? sessionModeInput.value : 'random';
+        let sessionId = sessionMode === 'static' ? (document.getElementById('sessionId')?.value || '') : '';
+
         return {
             storage_path: document.getElementById('storagePath').value,
             session_lifetime: document.getElementById('sessionLifetime').value,
+            session_mode: sessionMode,
+            session_id: sessionId,
         };
     }
+
+    /**
+     * Toggles visibility of the static session ID input field.
+     *
+     * @returns {void}
+     */
+    window.toggleSessionIdInput = function () {
+        let staticRadio = document.querySelector('input[name="sessionMode"][value="static"]');
+        let staticRow = document.getElementById('staticSessionIdRow');
+
+        if (!staticRadio || !staticRow) return;
+
+        let isStatic = staticRadio.checked;
+        staticRow.style.display = isStatic ? 'block' : 'none';
+    };
 
     /**
      * Displays an alert message inside the element with the given ID.

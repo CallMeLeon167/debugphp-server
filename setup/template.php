@@ -181,6 +181,38 @@ function renderWizard(bool $envExists, array $values): void
 
                 <div class="form-divider"></div>
 
+                <!-- Session ID Mode -->
+                <div class="section-label">Session ID Mode</div>
+                <div class="form-row full">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="radio" name="sessionMode" value="random"
+                                <?= ($values['session_mode'] ?? 'random') === 'random' ? 'checked' : '' ?>
+                                onchange="toggleSessionIdInput()">
+                            Random (new ID per dashboard load)
+                        </label>
+                        <label class="form-label" style="margin-top: 8px;">
+                            <input type="radio" name="sessionMode" value="static"
+                                <?= ($values['session_mode'] ?? 'random') === 'static' ? 'checked' : '' ?>
+                                onchange="toggleSessionIdInput()">
+                            Static (fixed Session ID)
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-row full" id="staticSessionIdRow"
+                    style="display: <?= ($values['session_mode'] ?? 'random') === 'static' ? 'block' : 'none' ?>">
+                    <div class="form-group">
+                        <label class="form-label">Static Session ID</label>
+                        <input class="form-input" id="sessionId" type="text"
+                            value="<?= e($values['session_id']) ?>"
+                            placeholder="e.g. my-debug-session">
+                        <small style="color: var(--text-muted); font-size: 13px;">
+                            Leave empty to auto-generate a static ID on first request
+                        </small>
+                    </div>
+                </div>
+
                 <!-- Session -->
                 <div class="section-label">Session</div>
                 <div class="form-row full">

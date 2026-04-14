@@ -86,6 +86,9 @@ final class Application
     {
         $this->router->get('/', [$controller, 'dashboard']);
 
+        $this->router->get('/api/config', [$controller, 'getConfig']);
+
+        $this->router->post('/api/session', [$controller, 'createSession']);
         $this->router->post('/api/session', [$controller, 'createSession']);
         $this->router->delete('/api/session/{id}', [$controller, 'deleteSession']);
 

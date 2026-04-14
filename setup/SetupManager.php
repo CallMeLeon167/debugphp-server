@@ -97,6 +97,8 @@ final class SetupManager
         return [
             'storage_path'     => $env['STORAGE_PATH']           ?? 'data',
             'session_lifetime' => $env['SESSION_LIFETIME_HOURS'] ?? '24',
+            'session_mode'     => ($env['SESSION_ID'] ?? '') !== '' ? 'static' : 'random',
+            'session_id'       => $env['SESSION_ID']             ?? '',
         ];
     }
 
@@ -154,6 +156,15 @@ final class SetupManager
         $content .= 'STORAGE_PATH=' . (is_string($body['storage_path'] ?? null) ? $body['storage_path'] : 'data') . "\n\n";
         $content .= "# Session Settings\n";
         $content .= 'SESSION_LIFETIME_HOURS=' . (is_string($body['session_lifetime'] ?? null) ? $body['session_lifetime'] : '24') . "\n";
+
+        $sessionMode = is_string($body['session_mode'] ?? null) ? $body['session_mode'] : 'random';
+        $sessionId = '';
+
+        if ($sessionMode === 'static' && is_string($body['session_id'] ?? null) && $body['session_id'] !== '') {
+            $sessionId = $body['session_id'];
+        }
+
+        $content .= 'SESSION_ID=' . $sessionId . "\n";
 
         if (file_put_contents($this->envPath, $content) === false) {
             return [

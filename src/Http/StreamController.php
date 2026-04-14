@@ -19,6 +19,7 @@ use DebugPHP\Server\Storage\EntryRepository;
 use DebugPHP\Server\Storage\EnvironmentRepository;
 use DebugPHP\Server\Storage\MetricRepository;
 use DebugPHP\Server\Storage\SessionRepository;
+use DebugPHP\Server\Config;
 
 /**
  * Server-Sent Events (SSE) stream controller.
@@ -80,11 +81,16 @@ final class StreamController
      */
     public function handle(string $sessionId): void
     {
-        if ($this->sessions->find($sessionId) === null) {
+        $staticId = Config::sessionId();
+        if ($staticId !== '' && $sessionId === $staticId) {
+            $session = $this->sessions->find($sessionId);
+            if ($session === null) {
+                $this->sessions->create();
+            }
+        } elseif ($this->sessions->find($sessionId) === null) {
             http_response_code(404);
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode(['error' => 'Session not found or expired']);
-
             return;
         }
 
