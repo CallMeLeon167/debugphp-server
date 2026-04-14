@@ -120,7 +120,12 @@ final class EntryRepository
             return [];
         }
 
-        sort($files, SORT_STRING);
+        usort($files, static function (string $a, string $b): int {
+            $aId = (int) basename($a, '.json');
+            $bId = (int) basename($b, '.json');
+
+            return $aId <=> $bId;
+        });
 
         /** @var list<array{id: int, session_id: string, request_id: string, data: string, meta: string, timestamp: float, created_at: string}> $results */
         $results = [];
