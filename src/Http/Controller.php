@@ -20,6 +20,7 @@ use DebugPHP\Server\Storage\EnvironmentRepository;
 use DebugPHP\Server\Storage\MetricRepository;
 use DebugPHP\Server\Storage\SessionRepository;
 use DebugPHP\Server\Request;
+use DebugPHP\Server\Config;
 
 /**
  * Handles all HTTP requests for the DebugPHP API.
@@ -124,13 +125,11 @@ final class Controller
 
         if ($sessionId === '') {
             $this->json(['error' => 'Missing session ID'], 400);
-
             return;
         }
 
-        if ($this->sessions->find($sessionId) === null) {
+        if (!$this->ensureSession($sessionId)) {
             $this->json(['error' => 'Session not found or expired'], 404);
-
             return;
         }
 
@@ -248,13 +247,11 @@ final class Controller
 
         if ($sessionId === '') {
             $this->json(['error' => 'Missing session ID'], 400);
-
             return;
         }
 
-        if ($this->sessions->find($sessionId) === null) {
+        if (!$this->ensureSession($sessionId)) {
             $this->json(['error' => 'Session not found or expired'], 404);
-
             return;
         }
 
@@ -301,13 +298,11 @@ final class Controller
 
         if ($sessionId === '') {
             $this->json(['error' => 'Missing session ID'], 400);
-
             return;
         }
 
-        if ($this->sessions->find($sessionId) === null) {
+        if (!$this->ensureSession($sessionId)) {
             $this->json(['error' => 'Session not found or expired'], 404);
-
             return;
         }
 
@@ -329,5 +324,44 @@ final class Controller
         http_response_code($status);
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * Returns the public server configuration.
+     *
+     * GET /api/config
+     * Response: JSON with static_session flag.
+     */
+    public function getConfig(): void
+    {
+        $this->json([
+            'static_session' => Config::sessionId() !== '',
+            'version'        => Config::version(),
+        ]);
+    }
+
+    /**
+     * Ensures a session exists. For static sessions, creates them auto-matically if missing.
+     * For random sessions, returns false if not found.
+     *
+     * @param string $sessionId The session ID from the request.
+     *
+     * @return bool True if session exists/was created, false otherwise.
+     */
+    private function ensureSession(string $sessionId): bool
+    {
+        $staticId = Config::sessionId();
+
+        if ($staticId !== '' && $sessionId === $staticId) {
+            $session = $this->sessions->find($sessionId);
+
+            if ($session === null) {
+                $this->sessions->create();
+            }
+
+            return true;
+        }
+
+        return $this->sessions->find($sessionId) !== null;
     }
 }

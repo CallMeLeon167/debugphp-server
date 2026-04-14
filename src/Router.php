@@ -118,9 +118,10 @@ final class Router
     /**
      * Adds a route and converts the path into a regex pattern.
      *
-     * Supports two placeholder types:
-     *   {name}      → (?P<name>[a-f0-9]{32})  matches 32-char hex session IDs
-     *   {name:int}  → (?P<name>\d+)            matches numeric entry IDs
+     * Supports three placeholder types:
+     *   {name}      → (?P<name>[a-zA-Z0-9_-]+)  matches alphanumeric session IDs (min 1 char)
+     *   {name:hex}  → (?P<name>[a-f0-9]{32})    matches 32-char hex session IDs
+     *   {name:int}  → (?P<name>\d+)             matches numeric entry IDs
      *
      * @param string   $method   HTTP method (GET, POST, DELETE).
      * @param string   $path     The URL path with optional {placeholders}.
@@ -137,11 +138,12 @@ final class Router
                 /** @var list<string> $params */
                 $params[] = $matches[1];
 
-                $type = $matches[2] ?? 'hex';
+                $type = $matches[2] ?? 'default';
 
                 return match ($type) {
                     'int'   => '(?P<' . $matches[1] . '>\d+)',
-                    default => '(?P<' . $matches[1] . '>[a-f0-9]{32})',
+                    'hex'   => '(?P<' . $matches[1] . '>[a-f0-9]{32})',
+                    default => '(?P<' . $matches[1] . '>[a-zA-Z0-9_-]+)',
                 };
             },
             $path,

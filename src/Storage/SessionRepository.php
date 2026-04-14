@@ -56,7 +56,29 @@ final class SessionRepository
     {
         $this->deleteExpired();
 
-        $id        = bin2hex(random_bytes(16));
+        $staticId = Config::sessionId();
+
+        if ($staticId !== '') {
+            $existing = $this->find($staticId);
+
+            if ($existing !== null) {
+                $expiresAt = date('Y-m-d H:i:s', time() + (Config::sessionLifetimeHours() * 3600));
+                $existing['expires_at'] = $expiresAt;
+
+                file_put_contents(
+                    $this->storage->sessionFile($staticId),
+                    json_encode($existing, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT),
+                    LOCK_EX,
+                );
+
+                return $existing;
+            }
+
+            $id = $staticId;
+        } else {
+            $id = bin2hex(random_bytes(16));
+        }
+
         $createdAt = date('Y-m-d H:i:s');
         $expiresAt = date('Y-m-d H:i:s', time() + (Config::sessionLifetimeHours() * 3600));
 
@@ -107,10 +129,26 @@ final class SessionRepository
         /** @var array{id: string, created_at: string, expires_at: string} $session */
         $session = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
 
-        // Check expiry
-        if (strtotime($session['expires_at']) <= time()) {
-            $this->delete($id);
+        $staticId = Config::sessionId();
 
+        if ($staticId !== '' && $session['id'] === $staticId) {
+            $currentExpiry = strtotime($session['expires_at']);
+            $now = time();
+
+            if ($currentExpiry <= $now) {
+                $session['expires_at'] = date('Y-m-d H:i:s', $now + (Config::sessionLifetimeHours() * 3600));
+
+                file_put_contents(
+                    $file,
+                    json_encode($session, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT),
+                    LOCK_EX,
+                );
+            }
+
+            return $session;
+        }
+
+        if (strtotime($session['expires_at']) <= time()) {
             return null;
         }
 

@@ -29,7 +29,7 @@ namespace DebugPHP\Server;
 final class Config
 {
     /** @var string */
-    private string $version = '0.2.2';
+    private string $version = '0.3.0';
 
     /** @var self */
     private static self $instance;
@@ -50,6 +50,9 @@ final class Config
     /** @var string */
     private string $storagePath;
 
+    /** @var string */
+    private string $sessionId;
+
     private function __construct()
     {
         $sessionLifetime = isset($_ENV['SESSION_LIFETIME_HOURS']) && is_numeric($_ENV['SESSION_LIFETIME_HOURS'])
@@ -61,6 +64,10 @@ final class Config
         $this->storagePath = isset($_ENV['STORAGE_PATH']) && is_string($_ENV['STORAGE_PATH'])
             ? $_ENV['STORAGE_PATH']
             : 'data';
+
+        $this->sessionId = isset($_ENV['SESSION_ID']) && is_string($_ENV['SESSION_ID'])
+            ? $_ENV['SESSION_ID']
+            : '';
 
         $scriptName = isset($_SERVER['SCRIPT_NAME']) && is_string($_SERVER['SCRIPT_NAME'])
             ? $_SERVER['SCRIPT_NAME']
@@ -134,5 +141,15 @@ final class Config
         }
 
         return self::$instance;
+    }
+
+    /**
+     * Returns the configured static session ID (empty string if random mode).
+     *
+     * @return string
+     */
+    public static function sessionId(): string
+    {
+        return self::instance()->sessionId;
     }
 }
