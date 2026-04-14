@@ -295,7 +295,6 @@
 
         if (lastRequestId !== null && requestId !== lastRequestId && autoClear) {
             clearDomEntries();
-            clearSession();
         }
 
         lastRequestId = requestId;
