@@ -1,0 +1,36 @@
+{
+  "name": "debugphp-server",
+  "build": {
+    "dockerfile": "../Dockerfile",
+    "context": ".."
+  },
+  "overrideCommand": false,
+  "workspaceMount": "source=${localWorkspaceFolder},target=/var/www/html,type=bind,consistency=cached",
+  "workspaceFolder": "/var/www/html",
+  "forwardPorts": [8080],
+  "portsAttributes": {
+    "8080": {
+      "label": "DebugPHP Server"
+    }
+  },
+  "remoteUser": "www-data",
+  "containerEnv": {
+    "CADDY_SERVER_ROOT": "/var/www/html",
+    "STORAGE_PATH": "/var/www/html/data",
+    "SESSION_LIFETIME_HOURS": "24"
+  },
+  "postCreateCommand": "composer install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "bmewburn.vscode-intelephense-client",
+        "xdebug.php-pack",
+        "EditorConfig.EditorConfig"
+      ],
+      "settings": {
+        "php.validate.executablePath": "/usr/local/bin/php",
+        "intelephense.environment.phpVersion": "8.4"
+      }
+    }
+  }
+}
