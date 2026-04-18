@@ -23,6 +23,8 @@
     let autoClear = localStorage.getItem('debugphp_autoclear') === 'true';
     let typeCounts = new Map();
     let labelCounts = new Map();
+    let sseState = 'initial';
+    let activeEditor = localStorage.getItem('debugphp_editor') || 'none';
 
     // ─── Editor Picker ──────────────────────────────────────
 
@@ -39,8 +41,6 @@
         { id: 'phpstorm', label: 'PhpStorm', scheme: 'phpstorm://open?file={fullpath}&line={line}' },
         { id: 'sublime', label: 'Sublime Text', scheme: 'subl://open?url=file://{fullpath}&line={line}' },
     ];
-
-    let activeEditor = localStorage.getItem('debugphp_editor') || 'none';
 
     /**
      * Builds the editor deep-link URL for the given file and line.
@@ -127,6 +127,76 @@
 
         let btn = document.getElementById('editorPickerBtn');
         if (btn) btn.classList.toggle('active', hasEditor);
+    }
+
+    /**
+     * Displays a transient toast notification inside the dashboard.
+     *
+     * @param {string} message - The notification text.
+     * @param {string} type    - One of 'info', 'success', 'warning', or 'error'.
+     * @param {number} duration - How long to show the toast in milliseconds.
+     */
+    function showNotification(message, type = 'info', duration = 5000) {
+        let container = document.getElementById('toastContainer');
+        if (!container) return;
+
+        let toast = document.createElement('div');
+        toast.className = 'toast toast-' + type;
+        toast.innerHTML =
+            '<span class="toast-message">' + escapeHtml(message) + '</span>' +
+            '<button type="button" class="toast-close">&times;</button>';
+
+        let closeBtn = toast.querySelector('.toast-close');
+        closeBtn.addEventListener('click', function () {
+            removeNotification(toast);
+        });
+
+        container.appendChild(toast);
+
+        setTimeout(function () {
+            removeNotification(toast);
+        }, duration);
+    }
+
+    /**
+     * Removes a toast notification from the DOM.
+     *
+     * @param {HTMLElement} toast - The toast element to remove.
+     */
+    function removeNotification(toast) {
+        if (!toast || !toast.parentNode) return;
+        toast.classList.add('fade-out');
+        setTimeout(function () {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 220);
+    }
+
+    /**
+     * Sets the current SSE (Server-Sent Events) state and displays a corresponding notification.
+     *
+     * @param {string} state - The new SSE state.
+     */
+    function setSseState(state) {
+        if (sseState === state) return;
+        sseState = state;
+
+        if (state === 'connected') {
+            showNotification('SSE connected.', 'success', 2800);
+        }
+
+        if (state === 'expired') {
+            showNotification('Session expired. Start a new session to continue debugging.', 'warning', 7000);
+        }
+
+        if (state === 'reconnect') {
+            showNotification('SSE reconnect event received. Waiting for stream resumption...', 'info', 4200);
+        }
+
+        if (state === 'disconnected') {
+            showNotification('SSE disconnected. Trying to reconnect in the background…', 'error', 6000);
+        }
     }
 
     /**
@@ -535,6 +605,7 @@
 
         eventSource.addEventListener('connected', function () {
             dom.sessionInfo.classList.remove('disconnected');
+            setSseState('connected');
         });
 
         eventSource.addEventListener('entry', function (e) {
@@ -557,10 +628,11 @@
 
         eventSource.addEventListener('expired', function () {
             dom.sessionInfo.classList.add('disconnected');
+            setSseState('expired');
         });
 
         eventSource.addEventListener('reconnect', function () {
-            // EventSource will auto-reconnect
+            setSseState('reconnect');
         });
 
         eventSource.addEventListener('environment', function (e) {
@@ -568,8 +640,12 @@
             renderEnvironment(data);
         });
 
-        eventSource.onerror = function () {
+        eventSource.onerror = function (e) {
             dom.sessionInfo.classList.add('disconnected');
+            setSseState('disconnected');
+            setTimeout(function () {
+                connectStream(id);
+            }, 3000);
         };
     }
 
