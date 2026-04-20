@@ -1,23 +1,15 @@
 {
   "name": "debugphp-server",
-  "build": {
-    "dockerfile": "../Dockerfile",
-    "context": ".."
-  },
-  "overrideCommand": false,
-  "workspaceMount": "source=${localWorkspaceFolder},target=/var/www/html,type=bind,consistency=cached",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "app",
   "workspaceFolder": "/var/www/html",
-  "forwardPorts": [8080],
+  "forwardPorts": [
+    8080
+  ],
   "portsAttributes": {
     "8080": {
       "label": "DebugPHP Server"
     }
-  },
-  "remoteUser": "www-data",
-  "containerEnv": {
-    "CADDY_SERVER_ROOT": "/var/www/html",
-    "STORAGE_PATH": "/var/www/html/data",
-    "SESSION_LIFETIME_HOURS": "24"
   },
   "postCreateCommand": "composer install",
   "customizations": {
