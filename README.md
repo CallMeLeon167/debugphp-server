@@ -23,13 +23,22 @@ This is the server and dashboard component of [DebugPHP](https://github.com/Call
 
 ## Installation
 
+### Option A — PHP built-in server
+
 ```bash
 git clone https://github.com/CallMeLeon167/debugphp-server.git
 cd debugphp-server
 composer install
+php -S localhost:8787
 ```
 
-Then open `http://localhost:8080/setup/` in your browser and follow the setup wizard.
+### Option B — Docker
+
+```bash
+git clone https://github.com/CallMeLeon167/debugphp-server.git
+cd debugphp-server
+docker compose up
+```
 
 ---
 
@@ -52,6 +61,16 @@ Debug::init('your-session-token', [
 
 Debug::send('Hello DebugPHP!');
 Debug::send($user, 'User')->color('blue');
+```
+
+## Running inside Docker?
+
+Enable auto-detection so the client finds the server automatically:
+
+```php
+Debug::init('your-session-token', [
+    'dockerized' => true,
+]);
 ```
 
 See the [DebugPHP client repository](https://github.com/CallMeLeon167/debugphp) for the full API documentation.
