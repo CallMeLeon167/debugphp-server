@@ -168,6 +168,8 @@ use DebugPHP\Server\Config;
     <!-- Mobile Sidebar Backdrop -->
     <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
+    <div class="toast-container" id="toastContainer"></div>
+
     <script src="<?= Config::baseUrl() ?>/assets/js/dashboard.js"></script>
 </body>
 
