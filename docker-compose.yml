@@ -3,18 +3,47 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: debugphp-server
+    hostname: debugphp-server
     user: root
     ports:
-      - '8080:8080'
+      - '8787:8787'
     environment:
-      STORAGE_PATH: /var/www/html/data
-      SESSION_LIFETIME_HOURS: '24'
+      CADDY_HTTP_PORT: '8787'
     volumes:
       - ./:/var/www/html:cached
       - vendor:/var/www/html/vendor
       - data:/var/www/html/data
     working_dir: /var/www/html
+    networks:
+      - debugphp
+    restart: unless-stopped
+
+  network-joiner:
+    image: docker:cli
+    container_name: debugphp-network-joiner
+    restart: unless-stopped
+    depends_on:
+      - app
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: >
+      sh -c '
+      echo "[joiner] starting auto-join loop...";
+      while true; do
+        for net in $$(docker network ls --format "{{.Name}}" | grep -Ev "^(bridge|host|none|debugphp)$$"); do
+          if ! docker network inspect "$$net" --format "{{range .Containers}}{{.Name}} {{end}}" | grep -q "debugphp-server"; then
+            docker network connect "$$net" debugphp-server 2>/dev/null && echo "[joiner] joined $$net" || true;
+          fi;
+        done;
+        sleep 10;
+      done
+      '
 
 volumes:
   vendor:
   data:
+
+networks:
+  debugphp:
+    name: debugphp

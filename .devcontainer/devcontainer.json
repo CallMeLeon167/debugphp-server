@@ -4,10 +4,10 @@
   "service": "app",
   "workspaceFolder": "/var/www/html",
   "forwardPorts": [
-    8080
+    8787
   ],
   "portsAttributes": {
-    "8080": {
+    "8787": {
       "label": "DebugPHP Server"
     }
   },

@@ -26,4 +26,4 @@ ENV CADDY_SERVER_ROOT=/var/www/html
 
 USER www-data
 
-EXPOSE 8080
+EXPOSE 8787
