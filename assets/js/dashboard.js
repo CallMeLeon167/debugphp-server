@@ -25,6 +25,7 @@
     let labelCounts = new Map();
     let sseState = 'initial';
     let activeEditor = localStorage.getItem('debugphp_editor') || 'none';
+    let theme = localStorage.getItem('debugphp_theme') || 'dark';
 
     // ─── Editor Picker ──────────────────────────────────────
 
@@ -216,6 +217,7 @@
         searchInput: document.getElementById('searchInput'),
         pauseBtn: document.getElementById('pauseBtn'),
         autoClearBtn: document.getElementById('autoClearBtn'),
+        themeToggleBtn: document.getElementById('themeToggleBtn'),
         detailPanel: document.getElementById('detailPanel'),
         detailBody: document.getElementById('detailBody'),
         statTotal: document.getElementById('statTotal'),
@@ -368,6 +370,27 @@
         }
 
         lastRequestId = requestId;
+    }
+
+    // ─── Theme Toggle ─────────────────────────────────────────
+
+    /**
+     * Applies the current theme to the dashboard by toggling the appropriate CSS class on the body
+     * and updating the theme toggle button state. Also persists the selection in localStorage.
+     */
+    function updateTheme() {
+        document.body.classList.toggle('theme-light', theme === 'light');
+
+        let btn = dom.themeToggleBtn;
+        if (!btn) return;
+
+        let isLight = theme === 'light';
+        btn.classList.toggle('active', isLight);
+        btn.innerHTML = isLight
+            ? '&#9790; <span class="btn-text hide-small">Dark</span>'
+            : '&#9728; <span class="btn-text hide-small">Light</span>';
+
+        localStorage.setItem('debugphp_theme', theme);
     }
 
     // ─── Type Filter ─────────────────────────────────────────
@@ -1573,6 +1596,12 @@
         updateAutoClearBtn();
     });
 
+    // Theme toggle
+    dom.themeToggleBtn.addEventListener('click', function () {
+        theme = theme === 'light' ? 'dark' : 'light';
+        updateTheme();
+    });
+
     // Clear
     document.getElementById('clearBtn').addEventListener('click', async function () {
         await clearSession();
@@ -1936,6 +1965,7 @@
     async function init() {
         renderEditorOptions();
         updateEditorState();
+        updateTheme();
         updateAutoClearBtn();
 
         let stored = loadSession();

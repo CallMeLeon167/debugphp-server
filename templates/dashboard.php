@@ -76,6 +76,9 @@ use DebugPHP\Server\Config;
             <button class="topbar-btn" id="pauseBtn" title="Pause/Resume stream">
                 &#10074;&#10074; <span class="btn-text hide-small">Pause</span>
             </button>
+            <button class="topbar-btn" id="themeToggleBtn" title="Toggle theme">
+                &#9728; <span class="btn-text hide-small">Light</span>
+            </button>
             <button class="topbar-btn danger hide-tablet" id="clearBtn" title="Clear all entries">
                 &#128465; <span class="btn-text">Clear</span>
             </button>
