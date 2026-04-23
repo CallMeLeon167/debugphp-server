@@ -29,7 +29,7 @@ namespace DebugPHP\Server;
 final class Config
 {
     /** @var string */
-    private string $version = '0.5.0';
+    private string $version = '0.5.1';
 
     /** @var self */
     private static self $instance;

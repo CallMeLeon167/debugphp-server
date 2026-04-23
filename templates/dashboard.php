@@ -22,7 +22,7 @@ use DebugPHP\Server\Config;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DebugPHP — Dashboard</title>
     <link href="<?= Config::baseUrl() ?>/assets/fonts/fonts.css" rel="stylesheet">
-    <link rel="stylesheet" href="<?= Config::baseUrl() ?>/assets/css/dashboard.css">
+    <link rel="stylesheet" href="<?= Config::baseUrl() ?>/assets/css/dashboard.css?v=<?= Config::version() ?>">
     <script>
         window.__DEBUGPHP_BASE = <?= json_encode(Config::baseUrl(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES) ?>;
     </script>
@@ -173,7 +173,7 @@ use DebugPHP\Server\Config;
 
     <div class="toast-container" id="toastContainer"></div>
 
-    <script src="<?= Config::baseUrl() ?>/assets/js/dashboard.js"></script>
+    <script src="<?= Config::baseUrl() ?>/assets/js/dashboard.js?v=<?= Config::version() ?>"></script>
 </body>
 
 </html>
