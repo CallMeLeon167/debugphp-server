@@ -509,6 +509,18 @@
         if (allChip) allChip.classList.add('active');
     }
 
+    /**
+     * Registers the initial "All" chip in the type filter sidebar and sets up its click handler.
+     */
+    function registerInitialTypeChips() {
+        let allChip = dom.typeFilterChips.querySelector('[data-filter="all"]');
+        if (allChip) {
+            allChip.addEventListener('click', function () {
+                setTypeFilter('all');
+            });
+        }
+    }
+
     // ─── Label Filter ────────────────────────────────────────
 
     /**
@@ -1967,9 +1979,9 @@
         updateEditorState();
         updateTheme();
         updateAutoClearBtn();
+        registerInitialTypeChips();
 
         let stored = loadSession();
-
         if (stored) {
             applySession(stored, false);
         } else {
