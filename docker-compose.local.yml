@@ -1,0 +1,22 @@
+# Local development overrides.
+#
+# Keep docker-compose.yml safe for production/Coolify and add this file
+# explicitly when you want to expose the dashboard on your machine.
+services:
+  app:
+    ports:
+      - '${DEBUGPHP_HOST_PORT:-8787}:8787'
+    volumes:
+      - ./:/var/www/html:cached
+      - vendor:/var/www/html/vendor
+      - data:/var/www/html/data
+    networks:
+      - debugphp
+
+volumes:
+  vendor:
+  data:
+
+networks:
+  debugphp:
+    name: debugphp

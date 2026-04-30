@@ -25,17 +25,9 @@ if (!file_exists($autoloader)) {
 
 require_once $autoloader;
 
-// ─── Check for .env ──────────────────────────────────────
-if (!file_exists(__DIR__ . '/.env')) {
-    $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-    $base = rtrim(dirname($requestPath), '/');
-    header("Location: {$base}/setup/");
-    exit;
-}
-
 // ─── Load environment variables ──────────────────────────
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-$dotenv->load();
+$dotenv->safeLoad();
 
 // ─── Run the application ─────────────────────────────────
 use DebugPHP\Server\Application;

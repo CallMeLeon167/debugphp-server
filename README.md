@@ -37,8 +37,17 @@ php -S localhost:8787
 ```bash
 git clone https://github.com/CallMeLeon167/debugphp-server.git
 cd debugphp-server
-docker compose up
+docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
 ```
+
+The dashboard will be available at [http://localhost:8787](http://localhost:8787).
+
+### Deploying with Coolify
+
+Use `docker-compose.yml` as the Compose file in Coolify and assign your domain to
+the `app` service on container port `8787`. The base Compose file intentionally
+does not publish host ports or force a custom Docker network, so traffic goes
+through Coolify's proxy instead of a direct host port mapping.
 
 ---
 
