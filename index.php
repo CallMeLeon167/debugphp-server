@@ -25,8 +25,14 @@ if (!file_exists($autoloader)) {
 
 require_once $autoloader;
 
+use DebugPHP\Server\Application;
+use DebugPHP\Server\Environment;
+
 // ─── Check for .env ──────────────────────────────────────
-if (!file_exists(__DIR__ . '/.env')) {
+$envPath = __DIR__ . '/.env';
+$hasExternalConfig = Environment::get('STORAGE_PATH') !== null;
+
+if (!file_exists($envPath) && !$hasExternalConfig) {
     $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
     $base = rtrim(dirname($requestPath), '/');
     header("Location: {$base}/setup/");
@@ -34,10 +40,10 @@ if (!file_exists(__DIR__ . '/.env')) {
 }
 
 // ─── Load environment variables ──────────────────────────
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-$dotenv->load();
+if (file_exists($envPath)) {
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+    $dotenv->load();
+}
 
 // ─── Run the application ─────────────────────────────────
-use DebugPHP\Server\Application;
-
 (new Application())->run();

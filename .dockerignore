@@ -3,10 +3,12 @@
 
 Dockerfile
 docker-compose.yml
+docker-compose.local.yml
 .dockerignore
 
 .env
 .env.*
+composer.lock
 
 data/
 
