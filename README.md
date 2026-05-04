@@ -37,10 +37,14 @@ php -S localhost:8787
 ```bash
 git clone https://github.com/CallMeLeon167/debugphp-server.git
 cd debugphp-server
-docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+docker compose up --build
 ```
 
 The dashboard will be available at [http://localhost:8787](http://localhost:8787).
+
+`docker-compose.override.yml` is loaded automatically by Docker Compose for local
+development. The base `docker-compose.yml` remains safe for reverse-proxy
+platforms such as Coolify because it does not publish a host port.
 
 ### Deploying with Coolify
 
