@@ -67,7 +67,7 @@ final class SetupManager
      */
     public function isConfigured(array $env): bool
     {
-        if (!$this->envExists()) {
+        if (!$this->envExists() && !isset($env['STORAGE_PATH'])) {
             return false;
         }
 

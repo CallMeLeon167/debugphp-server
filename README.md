@@ -37,8 +37,27 @@ php -S localhost:8787
 ```bash
 git clone https://github.com/CallMeLeon167/debugphp-server.git
 cd debugphp-server
-docker compose up
+docker compose up --build
 ```
+
+The dashboard will be available at [http://localhost:8787](http://localhost:8787).
+
+`docker-compose.override.yml` is loaded automatically by Docker Compose for local
+development. The base `docker-compose.yml` remains safe for reverse-proxy
+platforms such as Coolify because it does not publish a host port.
+
+### Deploying with Coolify
+
+Use the Dockerfile or `docker-compose.yml` in Coolify and assign your domain to
+the `app` service. The production Compose file listens on container port `80` so
+Coolify can route traffic with its default proxy settings. If your Coolify
+instance asks for a port in the domain field, use port `80`.
+
+The Compose file also declares Coolify's `SERVICE_FQDN_APP_80` magic variable so
+Coolify generates proxy routing for the `app` service on container port `80`.
+
+The base Compose file intentionally avoids host port bindings and the local
+Docker socket so Coolify can attach its own proxy network.
 
 ---
 

@@ -15,6 +15,8 @@ declare(strict_types=1);
 
 namespace DebugPHP\Server\Storage;
 
+use DebugPHP\Server\Environment;
+
 /**
  * Manages all file-storage paths and ensures directories exist.
  *
@@ -46,9 +48,7 @@ final class StoragePath
      */
     public function __construct()
     {
-        $configured = isset($_ENV['STORAGE_PATH']) && is_string($_ENV['STORAGE_PATH'])
-            ? $_ENV['STORAGE_PATH']
-            : 'data';
+        $configured = Environment::get('STORAGE_PATH') ?? 'data';
 
         // Resolve relative paths against the project root
         if (!str_starts_with($configured, '/')) {
