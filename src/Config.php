@@ -55,18 +55,21 @@ final class Config
 
     private function __construct()
     {
-        $sessionLifetime = isset($_ENV['SESSION_LIFETIME_HOURS']) && is_numeric($_ENV['SESSION_LIFETIME_HOURS'])
-            ? (int) $_ENV['SESSION_LIFETIME_HOURS']
+        $configuredSessionLifetime = Environment::get('SESSION_LIFETIME_HOURS');
+        $sessionLifetime = $configuredSessionLifetime !== null && is_numeric($configuredSessionLifetime)
+            ? (int) $configuredSessionLifetime
             : 24;
 
         $this->sessionLifetimeHours = $sessionLifetime;
 
-        $this->storagePath = isset($_ENV['STORAGE_PATH']) && is_string($_ENV['STORAGE_PATH'])
-            ? $_ENV['STORAGE_PATH']
+        $configuredStoragePath = Environment::get('STORAGE_PATH');
+        $this->storagePath = $configuredStoragePath !== null
+            ? $configuredStoragePath
             : 'data';
 
-        $this->sessionId = isset($_ENV['SESSION_ID']) && is_string($_ENV['SESSION_ID'])
-            ? $_ENV['SESSION_ID']
+        $configuredSessionId = Environment::get('SESSION_ID');
+        $this->sessionId = $configuredSessionId !== null
+            ? $configuredSessionId
             : '';
 
         $scriptName = isset($_SERVER['SCRIPT_NAME']) && is_string($_SERVER['SCRIPT_NAME'])

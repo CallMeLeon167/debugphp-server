@@ -25,6 +25,7 @@
 declare(strict_types=1);
 
 use DebugPHP\Server\Config;
+use DebugPHP\Server\Environment;
 
 /**
  * Set to true to unlock the setup wizard after initial configuration.
@@ -51,7 +52,7 @@ require_once __DIR__ . '/template.php';
 $setup = new SetupManager();
 
 /** @var array<string, string> $loadedEnv */
-$loadedEnv = [];
+$loadedEnv = Environment::only(['STORAGE_PATH', 'SESSION_LIFETIME_HOURS', 'SESSION_ID']);
 
 if ($setup->envExists()) {
     $dotenv    = Dotenv\Dotenv::createImmutable(dirname(__DIR__));

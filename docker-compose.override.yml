@@ -1,0 +1,22 @@
+# Local development overrides.
+#
+# Docker Compose loads this file automatically for `docker compose up`.
+# Keep docker-compose.yml safe for reverse-proxy platforms such as Coolify.
+services:
+  app:
+    ports:
+      - '${DEBUGPHP_HOST_PORT:-8787}:80'
+    volumes:
+      - ./:/var/www/html:cached
+      - vendor:/var/www/html/vendor
+      - data:/var/www/html/data
+    working_dir: /var/www/html
+    networks:
+      - debugphp
+
+volumes:
+  vendor:
+
+networks:
+  debugphp:
+    name: debugphp
